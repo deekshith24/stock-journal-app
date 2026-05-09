@@ -289,7 +289,7 @@ export default function App() {
       const fetchTimes = Object.values(priceCache).map(e => new Date(e.fetchedAt).getTime());
       if (fetchTimes.length) setLastPriceFetchedAt(new Date(Math.max(...fetchTimes)));
     } catch (e) {
-      setError('Failed to connect to server. Make sure the backend is running on port 3002.');
+      setError('Failed to load data. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -448,8 +448,9 @@ export default function App() {
     </div>
   );
 
-  if (!authReady || faceIdState === 'checking') return null;
+  if (!authReady) return null;
   if (!loggedIn) return <LoginPage />;
+  if (faceIdState === 'checking') return null;
 
   if (faceIdState === 'prompt' && webauthnCredentialId && userId) {
     return (
