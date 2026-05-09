@@ -160,7 +160,7 @@ export default function App() {
         setUserId(session.user.id);
         setUserEmail(session.user.email ?? null);
         const credId = localStorage.getItem('webauthn_credential_id');
-        setFaceIdState(credId ? 'prompt' : 'setup');
+        setFaceIdState(prev => prev === 'checking' ? (credId ? 'prompt' : 'setup') : prev);
       }
       setAuthReady(true);
     });
@@ -170,7 +170,7 @@ export default function App() {
         setUserId(session.user.id);
         setUserEmail(session.user.email ?? null);
         const credId = localStorage.getItem('webauthn_credential_id');
-        setFaceIdState(credId ? 'prompt' : 'setup');
+        setFaceIdState(prev => prev === 'checking' ? (credId ? 'prompt' : 'setup') : prev);
       } else {
         setFaceIdState('checking');
       }
