@@ -159,7 +159,6 @@ export default function App() {
     async function initAuth(uid: string, email: string | null) {
       setUserId(uid);
       setUserEmail(email);
-      // Always query the server — localStorage can get out of sync
       try {
         const res = await fetch(`${API}/api/webauthn/get-credential`, {
           method: 'POST',
@@ -168,17 +167,17 @@ export default function App() {
         });
         const { credentialId } = await res.json();
         setWebauthnCredentialId(credentialId ?? null);
-        setFaceIdState(prev => prev === 'checking' ? (credentialId ? 'prompt' : 'setup') : prev);
+        setFaceIdState(credentialId ? 'prompt' : 'setup');
       } catch {
-        setFaceIdState(prev => prev === 'checking' ? 'setup' : prev);
+        setFaceIdState('setup');
       }
     }
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       const session = data.session;
       setLoggedIn(!!session);
       if (session?.user) {
-        initAuth(session.user.id, session.user.email ?? null);
+        await initAuth(session.user.id, session.user.email ?? null);
       }
       setAuthReady(true);
     });
@@ -186,7 +185,12 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setLoggedIn(!!session);
       if (session?.user) {
-        initAuth(session.user.id, session.user.email ?? null);
+        setUserId(session.user.id);
+        setUserEmail(session.user.email ?? null);
+        // Only re-check on fresh OAuth sign-in, not on token refreshes
+        if (_event === 'SIGNED_IN') {
+          initAuth(session.user.id, session.user.email ?? null);
+        }
       } else {
         setWebauthnCredentialId(null);
         setFaceIdState('checking');
@@ -444,7 +448,7 @@ export default function App() {
     </div>
   );
 
-  if (!authReady) return null;
+  if (!authReady || faceIdState === 'checking') return null;
   if (!loggedIn) return <LoginPage />;
 
   if (faceIdState === 'prompt' && webauthnCredentialId && userId) {

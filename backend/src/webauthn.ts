@@ -30,9 +30,9 @@ router.post('/get-credential', async (req: Request, res: Response) => {
     .from('webauthn_credentials')
     .select('credential_id')
     .eq('user_id', user_id)
-    .single();
+    .limit(1);
 
-  res.json({ credentialId: data?.credential_id ?? null });
+  res.json({ credentialId: data?.[0]?.credential_id ?? null });
 });
 
 // POST /api/webauthn/register-options
@@ -48,7 +48,7 @@ router.post('/register-options', async (req: Request, res: Response) => {
     attestationType: 'none',
     authenticatorSelection: {
       authenticatorAttachment: 'platform',
-      userVerification: 'required',
+      userVerification: 'preferred',
       residentKey: 'preferred',
     },
   });
@@ -80,16 +80,18 @@ router.post('/register-verify', async (req: Request, res: Response) => {
     const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
     const credId = Buffer.from(credentialID).toString('base64url');
 
-    const { error: upsertError } = await supabase.from('webauthn_credentials').upsert({
+    // Delete any existing credential for this user, then insert fresh
+    await supabase.from('webauthn_credentials').delete().eq('user_id', user_id);
+    const { error: insertError } = await supabase.from('webauthn_credentials').insert({
       credential_id: credId,
       user_id,
       public_key: Buffer.from(credentialPublicKey).toString('base64'),
       counter,
     });
 
-    if (upsertError) {
-      console.error('webauthn upsert error:', upsertError);
-      return res.status(500).json({ error: 'Failed to save credential: ' + upsertError.message });
+    if (insertError) {
+      console.error('webauthn insert error:', insertError);
+      return res.status(500).json({ error: 'Failed to save credential: ' + insertError.message });
     }
 
     res.json({ verified: true, credentialId: credId });
@@ -105,8 +107,8 @@ router.post('/auth-options', async (req: Request, res: Response) => {
 
   const options = await generateAuthenticationOptions({
     rpID: RP_ID,
-    allowCredentials: [{ id: Buffer.from(credential_id, 'base64url'), type: 'public-key', transports: ['internal'] }],
-    userVerification: 'required',
+    allowCredentials: [{ id: Buffer.from(credential_id, 'base64url'), type: 'public-key' }],
+    userVerification: 'preferred',
   });
 
   challenges.set(user_id, { challenge: options.challenge, expires: Date.now() + 60_000 });
@@ -120,11 +122,13 @@ router.post('/auth-verify', async (req: Request, res: Response) => {
   if (!stored) return res.status(400).json({ error: 'Challenge expired, try again' });
   challenges.delete(user_id);
 
-  const { data: cred } = await supabase
+  const { data: creds } = await supabase
     .from('webauthn_credentials')
     .select('*')
     .eq('credential_id', credential_id)
-    .single();
+    .limit(1);
+
+  const cred = creds?.[0];
 
   if (!cred) return res.status(400).json({ error: 'Credential not found' });
 
@@ -139,7 +143,7 @@ router.post('/auth-verify', async (req: Request, res: Response) => {
         credentialPublicKey: new Uint8Array(Buffer.from(cred.public_key, 'base64')),
         counter: cred.counter,
       },
-      requireUserVerification: true,
+      requireUserVerification: false,
     });
 
     if (!verification.verified) return res.status(401).json({ error: 'Face ID verification failed' });

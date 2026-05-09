@@ -44,11 +44,16 @@ export default function FaceIDPrompt({ userId, credentialId, onSuccess, onCreden
         return;
       }
       setStatus('error');
-      setErrorMsg(msg);
+      // On "not allowed" errors, show a friendly tap-to-retry message
+      if (msg.toLowerCase().includes('not allowed')) {
+        setErrorMsg('Tap the button below to verify');
+      } else {
+        setErrorMsg(msg);
+      }
     }
   };
 
-  // Auto-trigger Face ID on mount
+  // Auto-trigger — works in PWA/home screen mode; button is fallback for browser mode
   useEffect(() => { handleAuth(); }, []);
 
   return (
@@ -60,24 +65,30 @@ export default function FaceIDPrompt({ userId, credentialId, onSuccess, onCreden
         background: '#fff', borderRadius: 16, padding: '48px 40px',
         boxShadow: '0 4px 24px rgba(0,0,0,0.08)', textAlign: 'center', maxWidth: 360, width: '100%',
       }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>{status === 'loading' ? '⏳' : status === 'error' ? '❌' : '🔒'}</div>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>
+          {status === 'loading' ? '⏳' : status === 'error' ? '🔒' : '🔒'}
+        </div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>
-          {status === 'loading' ? 'Verifying…' : status === 'error' ? 'Try Again' : 'Face ID Required'}
+          {status === 'loading' ? 'Verifying…' : 'Verify to Open'}
         </h2>
         <p style={{ fontSize: 14, color: '#64748b', marginBottom: 32, lineHeight: 1.6 }}>
-          {status === 'error' ? errorMsg : 'Authenticate with Face ID to open Stock Journal'}
+          {status === 'error'
+            ? errorMsg
+            : status === 'loading'
+            ? 'Use Face ID or device passcode'
+            : 'Tap below to verify with Face ID or passcode'}
         </p>
 
         <button
           onClick={handleAuth}
           disabled={status === 'loading'}
           style={{
-            width: '100%', padding: '12px', borderRadius: 8, border: 'none',
+            width: '100%', padding: '14px', borderRadius: 8, border: 'none',
             background: '#1e293b', color: '#fff', fontSize: 15, fontWeight: 600,
             cursor: status === 'loading' ? 'not-allowed' : 'pointer', marginBottom: 12,
           }}
         >
-          {status === 'loading' ? 'Waiting for Face ID…' : 'Use Face ID'}
+          {status === 'loading' ? 'Waiting…' : 'Verify Identity'}
         </button>
 
         <button
