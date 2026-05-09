@@ -1,0 +1,2113 @@
+[
+  {
+    "stock": "PTGX",
+    "entry_date": "2026-04-22",
+    "entry_quantity": 2,
+    "entry_price": 105.87,
+    "reason_for_entry": "Base Breakout",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-28",
+        "quantity": 2,
+        "price": 98.9,
+        "reason": "SL",
+        "emotions": ""
+      }
+    ],
+    "id": 1,
+    "created_at": "2026-04-27T10:14:23.973Z"
+  },
+  {
+    "stock": "IBKR",
+    "trade_type": "positional",
+    "entry_date": "2026-04-15",
+    "entry_quantity": 3.760150848,
+    "entry_price": 79.55,
+    "reason_for_entry": "220DMA Buy",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-05-07",
+        "quantity": 1.741068,
+        "price": 86.15,
+        "reason": "Partial profit book",
+        "emotions": "Disciplined"
+      }
+    ],
+    "id": 2,
+    "created_at": "2026-04-28T16:11:50.992Z"
+  },
+  {
+    "stock": "RKLB",
+    "trade_type": "positional",
+    "entry_date": "2026-04-17",
+    "entry_quantity": 3.517230674,
+    "entry_price": 85.04,
+    "reason_for_entry": "Space theme in US",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 3,
+    "created_at": "2026-04-28T16:17:49.138Z"
+  },
+  {
+    "stock": "RKLB",
+    "trade_type": "positional",
+    "entry_date": "2026-04-24",
+    "entry_quantity": 1.82537164,
+    "entry_price": 81.93,
+    "reason_for_entry": "Downward Average",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 4,
+    "created_at": "2026-04-28T16:19:16.956Z"
+  },
+  {
+    "stock": "FANG",
+    "trade_type": "swing",
+    "entry_date": "2026-04-07",
+    "entry_quantity": 1,
+    "entry_price": 197.24,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-08",
+        "quantity": 1,
+        "price": 176.83,
+        "reason": "SL",
+        "emotions": ""
+      }
+    ],
+    "id": 5,
+    "created_at": "2026-04-28T16:31:59.563Z"
+  },
+  {
+    "stock": "YSS",
+    "trade_type": "swing",
+    "entry_date": "2026-04-09",
+    "entry_quantity": 7,
+    "entry_price": 29.48,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-10",
+        "quantity": 3,
+        "price": 34.22,
+        "reason": "Extended and Partial Book",
+        "emotions": ""
+      },
+      {
+        "date": "2026-05-03",
+        "quantity": 4,
+        "price": 30.03,
+        "reason": "Cost SL Hit",
+        "emotions": ""
+      }
+    ],
+    "id": 6,
+    "created_at": "2026-04-28T16:33:34.620Z"
+  },
+  {
+    "stock": "CIEN",
+    "trade_type": "swing",
+    "entry_date": "2026-04-17",
+    "entry_quantity": 0.6,
+    "entry_price": 500.09,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-28",
+        "quantity": 0.6,
+        "price": 467.08,
+        "reason": "SL",
+        "emotions": ""
+      }
+    ],
+    "id": 7,
+    "created_at": "2026-04-28T16:36:19.872Z"
+  },
+  {
+    "stock": "ARM",
+    "trade_type": "swing",
+    "entry_date": "2026-04-17",
+    "entry_quantity": 1.22,
+    "entry_price": 164.58,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-20",
+        "quantity": 1.22,
+        "price": 170.08,
+        "reason": "Exited by mistake while exploring IBKR app",
+        "emotions": ""
+      }
+    ],
+    "id": 8,
+    "created_at": "2026-04-28T16:36:52.861Z"
+  },
+  {
+    "stock": "AMPX",
+    "trade_type": "swing",
+    "entry_date": "2026-04-20",
+    "entry_quantity": 15,
+    "entry_price": 19.99,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-21",
+        "quantity": 5,
+        "price": 21.45,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-05-07",
+        "quantity": 10,
+        "price": 18.15,
+        "reason": "Big drop because of earning ",
+        "emotions": "Wrongly kept the stock till earning day"
+      }
+    ],
+    "id": 9,
+    "created_at": "2026-04-28T16:37:30.372Z"
+  },
+  {
+    "stock": "CAT",
+    "trade_type": "swing",
+    "entry_date": "2026-04-20",
+    "entry_quantity": 0.4,
+    "entry_price": 795.33,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-23",
+        "quantity": 0.2,
+        "price": 842.71,
+        "reason": "By Mistake while learning IBKR App",
+        "emotions": ""
+      },
+      {
+        "date": "2026-05-04",
+        "quantity": 0.2,
+        "price": 878.33,
+        "reason": "2Day coming down after big move of earning. May be flag formation. Can be entered flag BO ",
+        "emotions": "Disciplined"
+      }
+    ],
+    "id": 10,
+    "created_at": "2026-04-28T16:47:02.022Z"
+  },
+  {
+    "stock": "MAGS",
+    "entry_date": "2026-01-02",
+    "entry_quantity": 2.249022556,
+    "entry_price": 66.5,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 11,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "SPY",
+    "entry_date": "2026-01-02",
+    "entry_quantity": 0.6523364,
+    "entry_price": 685.67,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-13",
+        "quantity": 0.6523364,
+        "price": 695.53,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 12,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "AMZN",
+    "entry_date": "2026-01-06",
+    "entry_quantity": 1.288921446,
+    "entry_price": 232.07,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-09",
+        "quantity": 0.408747189,
+        "price": 244.65,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-01-20",
+        "quantity": 0.880174257,
+        "price": 232.94,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 13,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "RKLB",
+    "entry_date": "2026-01-06",
+    "entry_quantity": 1.260460647,
+    "entry_price": 79.11,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-07",
+        "quantity": 1.260460647,
+        "price": 84.5,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 14,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "GOOG",
+    "entry_date": "2026-01-07",
+    "entry_quantity": 0.466744894,
+    "entry_price": 320.43,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-14",
+        "quantity": 0.225033304,
+        "price": 333.28,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-01-16",
+        "quantity": 0.24171159,
+        "price": 330.27,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 15,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "APH",
+    "entry_date": "2026-01-12",
+    "entry_quantity": 1.359916526,
+    "entry_price": 146.63,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-15",
+        "quantity": 0.390142401,
+        "price": 153.79,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-01-16",
+        "quantity": 0.328208898,
+        "price": 152.34,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-01-20",
+        "quantity": 0.641565227,
+        "price": 152.22,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 16,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "TSM",
+    "entry_date": "2026-01-12",
+    "entry_quantity": 0.610967449,
+    "entry_price": 326.38,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-15",
+        "quantity": 0.17224254,
+        "price": 348.35,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-01-16",
+        "quantity": 0.145797248,
+        "price": 342.94,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-01-20",
+        "quantity": 0.292927661,
+        "price": 335.61,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 17,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "TQQQ",
+    "entry_date": "2026-01-13",
+    "entry_quantity": 5.690732151,
+    "entry_price": 54.29,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-28",
+        "quantity": 5.690732151,
+        "price": 57.85,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 18,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "META",
+    "entry_date": "2026-01-16",
+    "entry_quantity": 0.319656442,
+    "entry_price": 623.83,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-02",
+        "quantity": 0.128147927,
+        "price": 708.56,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-03",
+        "quantity": 0.191508515,
+        "price": 703.48,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 19,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "COHR",
+    "entry_date": "2026-01-21",
+    "entry_quantity": 0.967502474,
+    "entry_price": 206.11,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-28",
+        "quantity": 0.967502474,
+        "price": 213.64,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 20,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "RL",
+    "entry_date": "2026-01-22",
+    "entry_quantity": 0.53562507,
+    "entry_price": 372.29,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-01-23",
+        "quantity": 0.53562507,
+        "price": 364.16,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 21,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "EZU",
+    "entry_date": "2026-01-26",
+    "entry_quantity": 3.722242962,
+    "entry_price": 66.97,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-21",
+        "quantity": 0.044351142,
+        "price": 67.64,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-21",
+        "quantity": 0.67789182,
+        "price": 67.11,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-21",
+        "quantity": 3,
+        "price": 66.84,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 22,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "NVDA",
+    "entry_date": "2026-01-28",
+    "entry_quantity": 1.563862602,
+    "entry_price": 191.27,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-03",
+        "quantity": 1.563862602,
+        "price": 181.41,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 23,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "GEV",
+    "entry_date": "2026-01-30",
+    "entry_quantity": 0.271729799,
+    "entry_price": 733.85,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-03",
+        "quantity": 0.271729799,
+        "price": 781.09,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 24,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "GOOG",
+    "entry_date": "2026-01-30",
+    "entry_quantity": 0.58651725,
+    "entry_price": 339.99,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-03",
+        "quantity": 0.29291154,
+        "price": 341.4,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-04",
+        "quantity": 0.29360571,
+        "price": 337.23,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 25,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "IAU",
+    "entry_date": "2026-01-30",
+    "entry_quantity": 1.562375948,
+    "entry_price": 95.73,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-02",
+        "quantity": 1.562375948,
+        "price": 100.39,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 26,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "UEC",
+    "entry_date": "2026-01-30",
+    "entry_quantity": 10.69603347,
+    "entry_price": 18.64,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-25",
+        "quantity": 10.69603347,
+        "price": 13.53,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 27,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "MRK",
+    "entry_date": "2026-02-02",
+    "entry_quantity": 0.891669051,
+    "entry_price": 111.82,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-03",
+        "quantity": 0.891669051,
+        "price": 116.77,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 28,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "NDSN",
+    "entry_date": "2026-02-02",
+    "entry_quantity": 0.360257827,
+    "entry_price": 276.77,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-04",
+        "quantity": 0.360257827,
+        "price": 285.08,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 29,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "PG",
+    "entry_date": "2026-02-02",
+    "entry_quantity": 1.306184743,
+    "entry_price": 152.67,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-03",
+        "quantity": 0.641963895,
+        "price": 155.77,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-04",
+        "quantity": 0.664220848,
+        "price": 157.9,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 30,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "DAL",
+    "entry_date": "2026-02-03",
+    "entry_quantity": 2.100214285,
+    "entry_price": 71.21,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-09",
+        "quantity": 1.001361852,
+        "price": 74.9,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-12",
+        "quantity": 1.098852433,
+        "price": 68.32,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 31,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "FIX",
+    "entry_date": "2026-02-03",
+    "entry_quantity": 0.082514614,
+    "entry_price": 1208.39,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-04",
+        "quantity": 0.082514614,
+        "price": 1117.12,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 32,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "PH",
+    "entry_date": "2026-02-03",
+    "entry_quantity": 0.154502855,
+    "entry_price": 968.01,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-11",
+        "quantity": 0.099952023,
+        "price": 1000.48,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-12",
+        "quantity": 0.054550832,
+        "price": 977.42,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 33,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "WNC",
+    "entry_date": "2026-02-03",
+    "entry_quantity": 17.704636255,
+    "entry_price": 11.26,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-06",
+        "quantity": 17.704636255,
+        "price": 10.6,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 34,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "RTX",
+    "entry_date": "2026-02-04",
+    "entry_quantity": 0.971499561,
+    "entry_price": 205.26,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-26",
+        "quantity": 0.512137662,
+        "price": 195.26,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-03-02",
+        "quantity": 0.459361899,
+        "price": 208.38,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 35,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "CFG",
+    "entry_date": "2026-02-05",
+    "entry_quantity": 1.509613928,
+    "entry_price": 66.05,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-12",
+        "quantity": 1.509613928,
+        "price": 64.26,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 36,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "BLD",
+    "entry_date": "2026-02-06",
+    "entry_quantity": 0.292361765,
+    "entry_price": 511.56,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-11",
+        "quantity": 0.187794132,
+        "price": 532.5,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-12",
+        "quantity": 0.104567633,
+        "price": 541.04,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 37,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "COST",
+    "entry_date": "2026-02-06",
+    "entry_quantity": 0.150327874,
+    "entry_price": 994.89,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-12",
+        "quantity": 0.150327874,
+        "price": 1003.95,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 38,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "ASML",
+    "entry_date": "2026-02-09",
+    "entry_quantity": 0.069470668,
+    "entry_price": 1435.28,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-12",
+        "quantity": 0.069470668,
+        "price": 1411.38,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 39,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "EWY",
+    "entry_date": "2026-02-11",
+    "entry_quantity": 1.169643695,
+    "entry_price": 127.87,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-12",
+        "quantity": 1.169643695,
+        "price": 131.07,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 40,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "GILD",
+    "entry_date": "2026-02-11",
+    "entry_quantity": 0.962878075,
+    "entry_price": 155.33,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-12",
+        "quantity": 0.962878075,
+        "price": 152.57,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 41,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "LMT",
+    "entry_date": "2026-02-13",
+    "entry_quantity": 0.304923176,
+    "entry_price": 653.97,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-02",
+        "quantity": 0.304923176,
+        "price": 674.25,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 42,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "MNST",
+    "entry_date": "2026-02-18",
+    "entry_quantity": 2.397341168,
+    "entry_price": 83.18,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-26",
+        "quantity": 2.397341168,
+        "price": 85.76,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 43,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "NPWR",
+    "entry_date": "2026-02-18",
+    "entry_quantity": 71.335495564,
+    "entry_price": 2.1,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-23",
+        "quantity": 71.335495564,
+        "price": 1.82,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 44,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "NXT",
+    "entry_date": "2026-02-18",
+    "entry_quantity": 1.180072275,
+    "entry_price": 126.74,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-18",
+        "quantity": 1.180072275,
+        "price": 126.11,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 45,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "WDC",
+    "entry_date": "2026-02-18",
+    "entry_quantity": 0.827589412,
+    "entry_price": 301.19,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-19",
+        "quantity": 0.437518813,
+        "price": 285.7,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-03-18",
+        "quantity": 0.390070599,
+        "price": 301.93,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 46,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "GEV",
+    "entry_date": "2026-02-20",
+    "entry_quantity": 0.178479369,
+    "entry_price": 837.97,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-06",
+        "quantity": 0.178479369,
+        "price": 785.58,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 47,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "PH",
+    "entry_date": "2026-02-20",
+    "entry_quantity": 0.146389209,
+    "entry_price": 1021.66,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-13",
+        "quantity": 0.146389209,
+        "price": 895.69,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 48,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "LNG",
+    "entry_date": "2026-03-09",
+    "entry_quantity": 1,
+    "entry_price": 256.8,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-10",
+        "quantity": 1,
+        "price": 244,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 49,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "VRT",
+    "entry_date": "2026-03-09",
+    "entry_quantity": 0.576641322,
+    "entry_price": 259.36,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-11",
+        "quantity": 0.273261872,
+        "price": 274.46,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-03-30",
+        "quantity": 0.30337945,
+        "price": 240.29,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 50,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "PSQ",
+    "entry_date": "2026-03-13",
+    "entry_quantity": 8.007089783,
+    "entry_price": 31.13,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-27",
+        "quantity": 4.574073227,
+        "price": 32.79,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-01",
+        "quantity": 3.139688799,
+        "price": 31.85,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-08",
+        "quantity": 0.293327757,
+        "price": 30.51,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 51,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "SNDK",
+    "entry_date": "2026-03-16",
+    "entry_quantity": 0.21756397,
+    "entry_price": 687.43,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-18",
+        "quantity": 0.21756397,
+        "price": 736.28,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 52,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "LITE",
+    "entry_date": "2026-03-24",
+    "entry_quantity": 0.252255511,
+    "entry_price": 790.51,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-30",
+        "quantity": 0.252255511,
+        "price": 654.55,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 53,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "VAL",
+    "entry_date": "2026-03-24",
+    "entry_quantity": 2,
+    "entry_price": 98.64,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-27",
+        "quantity": 1,
+        "price": 103.41,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-03-30",
+        "quantity": 1,
+        "price": 101.96,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 54,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "EQIX",
+    "entry_date": "2026-04-01",
+    "entry_quantity": 0.200297317,
+    "entry_price": 995.57,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-10",
+        "quantity": 0.200297317,
+        "price": 1031.85,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 55,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "FIVE",
+    "entry_date": "2026-04-06",
+    "entry_quantity": 0.843066416,
+    "entry_price": 237.43,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-09",
+        "quantity": 0.843066416,
+        "price": 222.43,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 56,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "SSO",
+    "entry_date": "2026-04-21",
+    "entry_quantity": 3.235074626,
+    "entry_price": 61.64,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-05-07",
+        "quantity": 1.518787,
+        "price": 65.84,
+        "reason": "Partial profit book",
+        "emotions": "Disciplined"
+      }
+    ],
+    "id": 57,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "GEV",
+    "entry_date": "2026-04-21",
+    "entry_quantity": 0.295575459,
+    "entry_price": 1011.99,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-22",
+        "quantity": 0.295575459,
+        "price": 1125.19,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 58,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "MU",
+    "entry_date": "2026-04-22",
+    "entry_quantity": 0.422008524,
+    "entry_price": 472.53,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-23",
+        "quantity": 0.422008524,
+        "price": 485.57,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 59,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "MAGS",
+    "entry_date": "2026-01-27",
+    "entry_quantity": 1.499443592,
+    "entry_price": 66.5,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 60,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "TQQQ",
+    "entry_date": "2026-01-30",
+    "entry_quantity": 4.512050215,
+    "entry_price": 55.25,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-17",
+        "quantity": 3.135465751,
+        "price": 58.66,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-20",
+        "quantity": 1.376584464,
+        "price": 57.11,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 61,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "TQQQ",
+    "entry_date": "2026-02-04",
+    "entry_quantity": 3.046331271,
+    "entry_price": 49.09,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-20",
+        "quantity": 0.374361046,
+        "price": 57.11,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-21",
+        "quantity": 1.745139785,
+        "price": 57.3,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-23",
+        "quantity": 0.92683044,
+        "price": 59.71,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 62,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "TQQQ",
+    "entry_date": "2026-03-02",
+    "entry_quantity": 1.576971741,
+    "entry_price": 47.42,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-23",
+        "quantity": 1.411752408,
+        "price": 59.16,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-24",
+        "quantity": 0.165219333,
+        "price": 60.84,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 63,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "TQQQ",
+    "entry_date": "2026-04-09",
+    "entry_quantity": 2.044150359,
+    "entry_price": 48.78,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-24",
+        "quantity": 0.985301688,
+        "price": 60.84,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-05-04",
+        "quantity": 1,
+        "price": 65.01,
+        "reason": "Price extend from EMA",
+        "emotions": ""
+      },
+      {
+        "date": "2026-05-07",
+        "quantity": 0.058848,
+        "price": 71.59,
+        "reason": "Partial profit book",
+        "emotions": "Disciplined"
+      }
+    ],
+    "id": 64,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "TQQQ",
+    "entry_date": "2026-04-16",
+    "entry_quantity": 1.955962165,
+    "entry_price": 56.07,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-05-07",
+        "quantity": 0.220512,
+        "price": 71.59,
+        "reason": "Partial profit book",
+        "emotions": "Disciplined"
+      }
+    ],
+    "id": 65,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "META",
+    "entry_date": "2026-01-20",
+    "entry_quantity": 0.327100044,
+    "entry_price": 609.63,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-02-03",
+        "quantity": 0.092794005,
+        "price": 703.48,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-02-04",
+        "quantity": 0.234306039,
+        "price": 674.03,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 66,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "PSQ",
+    "entry_date": "2026-03-19",
+    "entry_quantity": 3.134570284,
+    "entry_price": 31.81,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-08",
+        "quantity": 1.607688303,
+        "price": 30.51,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 67,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "UEC",
+    "entry_date": "2026-02-04",
+    "entry_quantity": 6.320301457,
+    "entry_price": 15.78,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-25",
+        "quantity": 6.30396653,
+        "price": 13.53,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-03-27",
+        "quantity": 0.016334927,
+        "price": 12.8,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 68,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "IAU",
+    "entry_date": "2026-02-23",
+    "entry_quantity": 0.717856408,
+    "entry_price": 97.22,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-03-02",
+        "quantity": 0.717856408,
+        "price": 100.39,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 69,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "MAGS",
+    "entry_date": "2026-04-14",
+    "entry_quantity": 1.584257523,
+    "entry_price": 62.94,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 70,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "MAGS",
+    "entry_date": "2026-04-15",
+    "entry_quantity": 1.226171442,
+    "entry_price": 65.05,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 71,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "MAGS",
+    "entry_date": "2026-04-17",
+    "entry_quantity": 1.051560993,
+    "entry_price": 66.37,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 72,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "MAGS",
+    "entry_date": "2026-04-24",
+    "entry_quantity": 1.500571875,
+    "entry_price": 66.45,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 73,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "META",
+    "entry_date": "2026-02-05",
+    "entry_quantity": 0.29940812,
+    "entry_price": 666.01,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-14",
+        "quantity": 0.226036376,
+        "price": 663.61,
+        "reason": "",
+        "emotions": ""
+      },
+      {
+        "date": "2026-04-29",
+        "quantity": 0.073371744,
+        "price": 670.85,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 74,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "META",
+    "entry_date": "2026-02-09",
+    "entry_quantity": 0.149355454,
+    "entry_price": 667.6,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-29",
+        "quantity": 0.149355454,
+        "price": 670.85,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 75,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "META",
+    "entry_date": "2026-04-06",
+    "entry_quantity": 0.171760985,
+    "entry_price": 580.52,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-04-29",
+        "quantity": 0.171760985,
+        "price": 670.85,
+        "reason": "",
+        "emotions": ""
+      }
+    ],
+    "id": 76,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "swing"
+  },
+  {
+    "stock": "SSO",
+    "entry_date": "2026-04-22",
+    "entry_quantity": 1.618721387,
+    "entry_price": 61.6,
+    "reason_for_entry": "",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 77,
+    "created_at": "2026-05-02T00:00:00.000Z",
+    "trade_type": "positional"
+  },
+  {
+    "stock": "MAGS",
+    "trade_type": "positional",
+    "entry_date": "2025-12-31",
+    "entry_quantity": 2.939941144,
+    "entry_price": 67.83,
+    "reason_for_entry": "Pre-Jan carry-over position",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-05-07",
+        "quantity": 1.448603,
+        "price": 69.03,
+        "reason": "Partial profit book",
+        "emotions": "Disciplined"
+      }
+    ],
+    "id": 78,
+    "created_at": "2026-05-02T00:00:00.000Z"
+  },
+  {
+    "stock": "AEP",
+    "trade_type": "swing",
+    "entry_date": "2026-05-01",
+    "entry_quantity": 2,
+    "entry_price": 136.78,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [
+      {
+        "date": "2026-05-04",
+        "quantity": 2,
+        "price": 134.37,
+        "reason": "Earning day risk ",
+        "emotions": "Didnt exit partial on entry day squat"
+      }
+    ],
+    "id": 79,
+    "created_at": "2026-05-03T06:20:53.278Z"
+  },
+  {
+    "stock": "ROST",
+    "trade_type": "swing",
+    "entry_date": "2026-05-01",
+    "entry_quantity": 1,
+    "entry_price": 227.95,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 80,
+    "created_at": "2026-05-03T06:21:27.512Z"
+  },
+  {
+    "stock": "TSLA",
+    "trade_type": "swing",
+    "entry_date": "2026-05-05",
+    "entry_quantity": 1,
+    "entry_price": 395,
+    "reason_for_entry": "Reversal play from 7 Bar Arjun",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 81,
+    "created_at": "2026-05-06T02:26:02.966Z"
+  },
+  {
+    "stock": "LUNR",
+    "trade_type": "swing",
+    "entry_date": "2026-05-05",
+    "entry_quantity": 5.605697,
+    "entry_price": 26.68,
+    "reason_for_entry": "Small Base breakout . Cheat entry . 7 Bar Arjun Suggestion",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 82,
+    "created_at": "2026-05-06T02:28:46.030Z"
+  },
+  {
+    "stock": "TXN",
+    "trade_type": "swing",
+    "entry_date": "2026-05-06",
+    "entry_quantity": 1,
+    "entry_price": 284.68,
+    "reason_for_entry": "Base BO",
+    "exit_date": null,
+    "exit_quantity": null,
+    "exit_price": null,
+    "reason_for_exit": "",
+    "emotions": "",
+    "exits": [],
+    "id": 83,
+    "created_at": "2026-05-06T16:20:53.069Z"
+  }
+]
