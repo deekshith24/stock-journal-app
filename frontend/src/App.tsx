@@ -117,6 +117,7 @@ export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [faceIdState, setFaceIdState] = useState<'checking' | 'prompt' | 'setup' | 'done'>('checking');
+  const [webauthnCredentialId, setWebauthnCredentialId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<PageType>('india');
   const [tradeTypeTab, setTradeTypeTab] = useState<TradeTypeTab>('swing');
   const [usCurrency, setUsCurrency] = useState<UsCurrency>('USD');
@@ -153,25 +154,41 @@ export default function App() {
   const isUS = currentPage === 'us';
 
   useEffect(() => {
+    const API = import.meta.env.VITE_API_URL ?? '';
+
+    async function initAuth(uid: string, email: string | null) {
+      setUserId(uid);
+      setUserEmail(email);
+      // Always query the server — localStorage can get out of sync
+      try {
+        const res = await fetch(`${API}/api/webauthn/get-credential`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: uid }),
+        });
+        const { credentialId } = await res.json();
+        setWebauthnCredentialId(credentialId ?? null);
+        setFaceIdState(prev => prev === 'checking' ? (credentialId ? 'prompt' : 'setup') : prev);
+      } catch {
+        setFaceIdState(prev => prev === 'checking' ? 'setup' : prev);
+      }
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       const session = data.session;
       setLoggedIn(!!session);
       if (session?.user) {
-        setUserId(session.user.id);
-        setUserEmail(session.user.email ?? null);
-        const credId = localStorage.getItem('webauthn_credential_id');
-        setFaceIdState(prev => prev === 'checking' ? (credId ? 'prompt' : 'setup') : prev);
+        initAuth(session.user.id, session.user.email ?? null);
       }
       setAuthReady(true);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setLoggedIn(!!session);
       if (session?.user) {
-        setUserId(session.user.id);
-        setUserEmail(session.user.email ?? null);
-        const credId = localStorage.getItem('webauthn_credential_id');
-        setFaceIdState(prev => prev === 'checking' ? (credId ? 'prompt' : 'setup') : prev);
+        initAuth(session.user.id, session.user.email ?? null);
       } else {
+        setWebauthnCredentialId(null);
         setFaceIdState('checking');
       }
     });
@@ -430,15 +447,15 @@ export default function App() {
   if (!authReady) return null;
   if (!loggedIn) return <LoginPage />;
 
-  const credentialId = localStorage.getItem('webauthn_credential_id');
-  if (faceIdState === 'prompt' && credentialId && userId) {
+  if (faceIdState === 'prompt' && webauthnCredentialId && userId) {
     return (
       <FaceIDPrompt
         userId={userId}
-        credentialId={credentialId}
+        credentialId={webauthnCredentialId}
         onSuccess={() => setFaceIdState('done')}
         onCredentialNotFound={() => {
           localStorage.removeItem('webauthn_credential_id');
+          setWebauthnCredentialId(null);
           setFaceIdState('setup');
         }}
       />
@@ -449,8 +466,10 @@ export default function App() {
       <FaceIDSetup
         userId={userId}
         userName={userEmail ?? userId}
-        onDone={() => setFaceIdState('done')}
-        onSkip={() => setFaceIdState('done')}
+        onDone={(credentialId) => {
+          setWebauthnCredentialId(credentialId);
+          setFaceIdState('done');
+        }}
       />
     );
   }

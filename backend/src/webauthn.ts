@@ -21,6 +21,20 @@ setInterval(() => {
   for (const [k, v] of challenges) { if (v.expires < now) challenges.delete(k); }
 }, 60_000);
 
+// POST /api/webauthn/get-credential
+router.post('/get-credential', async (req: Request, res: Response) => {
+  const { user_id } = req.body;
+  if (!user_id) return res.status(400).json({ error: 'user_id required' });
+
+  const { data } = await supabase
+    .from('webauthn_credentials')
+    .select('credential_id')
+    .eq('user_id', user_id)
+    .single();
+
+  res.json({ credentialId: data?.credential_id ?? null });
+});
+
 // POST /api/webauthn/register-options
 router.post('/register-options', async (req: Request, res: Response) => {
   const { user_id, user_name } = req.body;
@@ -66,12 +80,17 @@ router.post('/register-verify', async (req: Request, res: Response) => {
     const { credentialID, credentialPublicKey, counter } = verification.registrationInfo;
     const credId = Buffer.from(credentialID).toString('base64url');
 
-    await supabase.from('webauthn_credentials').upsert({
+    const { error: upsertError } = await supabase.from('webauthn_credentials').upsert({
       credential_id: credId,
       user_id,
       public_key: Buffer.from(credentialPublicKey).toString('base64'),
       counter,
     });
+
+    if (upsertError) {
+      console.error('webauthn upsert error:', upsertError);
+      return res.status(500).json({ error: 'Failed to save credential: ' + upsertError.message });
+    }
 
     res.json({ verified: true, credentialId: credId });
   } catch (err) {

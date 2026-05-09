@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
+import { supabase } from '../supabaseClient';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
 interface Props {
   userId: string;
   userName: string;
-  onDone: () => void;
-  onSkip: () => void;
+  onDone: (credentialId: string) => void;
 }
 
-export default function FaceIDSetup({ userId, userName, onDone, onSkip }: Props) {
+export default function FaceIDSetup({ userId, userName, onDone }: Props) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -36,7 +36,7 @@ export default function FaceIDSetup({ userId, userName, onDone, onSkip }: Props)
       if (!result.verified) throw new Error(result.error || 'Setup failed');
 
       localStorage.setItem('webauthn_credential_id', result.credentialId);
-      onDone();
+      onDone(result.credentialId);
     } catch (err) {
       setStatus('error');
       setErrorMsg((err as Error).message);
@@ -70,20 +70,20 @@ export default function FaceIDSetup({ userId, userName, onDone, onSkip }: Props)
           style={{
             width: '100%', padding: '12px', borderRadius: 8, border: 'none',
             background: '#1e293b', color: '#fff', fontSize: 15, fontWeight: 600,
-            cursor: status === 'loading' ? 'not-allowed' : 'pointer', marginBottom: 12,
+            cursor: status === 'loading' ? 'not-allowed' : 'pointer',
           }}
         >
           {status === 'loading' ? 'Setting up…' : 'Enable Face ID'}
         </button>
 
         <button
-          onClick={onSkip}
+          onClick={() => supabase.auth.signOut()}
           style={{
-            width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #e2e8f0',
-            background: '#fff', color: '#64748b', fontSize: 14, cursor: 'pointer',
+            width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #e2e8f0',
+            background: '#fff', color: '#94a3b8', fontSize: 13, cursor: 'pointer', marginTop: 8,
           }}
         >
-          Skip for now
+          Sign out
         </button>
       </div>
     </div>
