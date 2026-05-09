@@ -1,6 +1,27 @@
 import { Trade, TradeFormData, Settings, ExitRecord, ActivityEntry } from './types';
+import { supabase } from './supabaseClient';
 
 const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function get<T>(url: string): Promise<T> {
+  const res = await fetch(url, { headers: await authHeaders() });
+  return handle(res);
+}
+
+async function mutate<T>(url: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  return handle(res);
+}
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -10,113 +31,31 @@ async function handle<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-const h = <T>(res: Response) => handle<T>(res);
-
 export const api = {
-  // India trades
-  getTrades: (): Promise<Trade[]> =>
-    fetch(`${BASE}/trades`).then(h<Trade[]>),
+  getTrades: () => get<Trade[]>(`${BASE}/trades`),
+  createTrade: (data: TradeFormData) => mutate<Trade>(`${BASE}/trades`, 'POST', data),
+  updateTrade: (id: number, data: TradeFormData) => mutate<Trade>(`${BASE}/trades/${id}`, 'PUT', data),
+  deleteTrade: (id: number) => mutate<{ success: boolean }>(`${BASE}/trades/${id}`, 'DELETE'),
 
-  createTrade: (data: TradeFormData): Promise<Trade> =>
-    fetch(`${BASE}/trades`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(h<Trade>),
+  getUsTrades: () => get<Trade[]>(`${BASE}/us-trades`),
+  createUsTrade: (data: TradeFormData) => mutate<Trade>(`${BASE}/us-trades`, 'POST', data),
+  updateUsTrade: (id: number, data: TradeFormData) => mutate<Trade>(`${BASE}/us-trades/${id}`, 'PUT', data),
+  deleteUsTrade: (id: number) => mutate<{ success: boolean }>(`${BASE}/us-trades/${id}`, 'DELETE'),
 
-  updateTrade: (id: number, data: TradeFormData): Promise<Trade> =>
-    fetch(`${BASE}/trades/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(h<Trade>),
+  addExit: (id: number, exit: ExitRecord) => mutate<Trade>(`${BASE}/trades/${id}/exits`, 'POST', exit),
+  addUsExit: (id: number, exit: ExitRecord) => mutate<Trade>(`${BASE}/us-trades/${id}/exits`, 'POST', exit),
+  updateExits: (id: number, exits: ExitRecord[]) => mutate<Trade>(`${BASE}/trades/${id}/exits`, 'PUT', { exits }),
+  updateUsExits: (id: number, exits: ExitRecord[]) => mutate<Trade>(`${BASE}/us-trades/${id}/exits`, 'PUT', { exits }),
 
-  deleteTrade: (id: number): Promise<{ success: boolean }> =>
-    fetch(`${BASE}/trades/${id}`, { method: 'DELETE' }).then(h<{ success: boolean }>),
+  getSettings: () => get<Settings>(`${BASE}/settings`),
+  updateSettings: (settings: Settings) => mutate<Settings>(`${BASE}/settings`, 'PUT', settings),
 
-  // US trades
-  getUsTrades: (): Promise<Trade[]> =>
-    fetch(`${BASE}/us-trades`).then(h<Trade[]>),
+  getUsdToInrRate: (date: string) => get<{ date: string; rate: number; fallback?: boolean }>(`${BASE}/usd-to-inr/${date}`),
 
-  createUsTrade: (data: TradeFormData): Promise<Trade> =>
-    fetch(`${BASE}/us-trades`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(h<Trade>),
+  getStockPrice: (symbol: string, exchange: string) => get<{
+    symbol: string; exchange: string; currentPrice: number;
+    previousClose: number; dayHigh: number; dayLow: number; timestamp: number;
+  }>(`${BASE}/stock-price/${symbol}/${exchange}`),
 
-  updateUsTrade: (id: number, data: TradeFormData): Promise<Trade> =>
-    fetch(`${BASE}/us-trades/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(h<Trade>),
-
-  deleteUsTrade: (id: number): Promise<{ success: boolean }> =>
-    fetch(`${BASE}/us-trades/${id}`, { method: 'DELETE' }).then(h<{ success: boolean }>),
-
-  // Exits (multiple partial closes)
-  addExit: (id: number, exit: ExitRecord): Promise<Trade> =>
-    fetch(`${BASE}/trades/${id}/exits`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(exit),
-    }).then(h<Trade>),
-
-  addUsExit: (id: number, exit: ExitRecord): Promise<Trade> =>
-    fetch(`${BASE}/us-trades/${id}/exits`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(exit),
-    }).then(h<Trade>),
-
-  updateExits: (id: number, exits: ExitRecord[]): Promise<Trade> =>
-    fetch(`${BASE}/trades/${id}/exits`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exits }),
-    }).then(h<Trade>),
-
-  updateUsExits: (id: number, exits: ExitRecord[]): Promise<Trade> =>
-    fetch(`${BASE}/us-trades/${id}/exits`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exits }),
-    }).then(h<Trade>),
-
-  // Settings
-  getSettings: (): Promise<Settings> =>
-    fetch(`${BASE}/settings`).then(h<Settings>),
-
-  updateSettings: (settings: Settings): Promise<Settings> =>
-    fetch(`${BASE}/settings`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings),
-    }).then(h<Settings>),
-  getUsdToInrRate: (date: string): Promise<{ date: string; rate: number; fallback?: boolean }> =>
-    fetch(`${BASE}/usd-to-inr/${date}`).then(h<{ date: string; rate: number; fallback?: boolean }>),
-
-  // Stock prices
-  getStockPrice: (symbol: string, exchange: string): Promise<{
-    symbol: string;
-    exchange: string;
-    currentPrice: number;
-    previousClose: number;
-    dayHigh: number;
-    dayLow: number;
-    timestamp: number;
-  }> =>
-    fetch(`${BASE}/stock-price/${symbol}/${exchange}`).then(h<{
-      symbol: string;
-      exchange: string;
-      currentPrice: number;
-      previousClose: number;
-      dayHigh: number;
-      dayLow: number;
-      timestamp: number;
-    }>),
-
-  getActivity: (): Promise<ActivityEntry[]> =>
-    fetch(`${BASE}/activity`).then(h<ActivityEntry[]>),
+  getActivity: () => get<ActivityEntry[]>(`${BASE}/activity`),
 };

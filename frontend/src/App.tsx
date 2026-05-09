@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trade, Settings, ExitRecord, StockPrice, ActivityEntry } from './types';
 import { api } from './api';
+import { supabase } from './supabaseClient';
 import { exportToExcel } from './utils/exportExcel';
 import TradeTable from './components/TradeTable';
 import TradeForm from './components/TradeForm';
@@ -9,6 +10,7 @@ import SettingsModal from './components/SettingsModal';
 import ClosePositionModal from './components/ClosePositionModal';
 import AnalyticsPage from './components/AnalyticsPage';
 import ActivityLogPage from './components/ActivityLogPage';
+import LoginPage from './components/LoginPage';
 
 type FilterType = 'all' | 'open' | 'closed';
 type PageType = 'india' | 'us' | 'analytics' | 'activity';
@@ -108,6 +110,8 @@ function isPriceStale(entry: CachedPrice, exchange: string): boolean {
 }
 
 export default function App() {
+  const [authReady, setAuthReady] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState<PageType>('india');
   const [tradeTypeTab, setTradeTypeTab] = useState<TradeTypeTab>('swing');
   const [usCurrency, setUsCurrency] = useState<UsCurrency>('USD');
@@ -142,6 +146,17 @@ export default function App() {
   });
 
   const isUS = currentPage === 'us';
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setLoggedIn(!!data.session);
+      setAuthReady(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const isAnalytics = currentPage === 'analytics';
   const trades = isUS ? usTrades : indiaTrades;
   const setTrades = isUS ? setUsTrades : setIndiaTrades;
@@ -392,6 +407,9 @@ export default function App() {
     </div>
   );
 
+  if (!authReady) return null;
+  if (!loggedIn) return <LoginPage />;
+
   return (
     <div className="app">
       <header className="app-header">
@@ -419,6 +437,7 @@ export default function App() {
             ↓ Export
           </button>
           <button className="btn btn-ghost" onClick={() => setShowSettings(true)}>⚙ Settings</button>
+          <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()} title="Sign out">Sign out</button>
         </div>
       </header>
 

@@ -32,6 +32,19 @@ async function migrate() {
   const { error: e3 } = await supabase.from('settings').upsert({ id: 1, ...settings });
   if (e3) { console.error('Settings error:', e3.message); } else { console.log('Settings done.'); }
 
+  // Reset sequences so new inserts get IDs after the migrated data
+  console.log('Resetting sequences...');
+  const { error: e4 } = await supabase.rpc('reset_sequences');
+  if (e4) {
+    // rpc not available — run raw SQL via the REST API isn't possible directly,
+    // so just remind the user
+    console.log('Note: Run this in Supabase SQL Editor to fix sequence:');
+    console.log("  SELECT setval('trades_id_seq', (SELECT MAX(id) FROM trades));");
+    console.log("  SELECT setval('us_trades_id_seq', (SELECT MAX(id) FROM us_trades));");
+  } else {
+    console.log('Sequences reset.');
+  }
+
   console.log('\nMigration complete!');
 }
 
