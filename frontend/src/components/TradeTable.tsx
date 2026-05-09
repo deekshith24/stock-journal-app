@@ -11,6 +11,7 @@ interface Props {
   onEdit: (trade: Trade) => void;
   onDelete: (trade: Trade) => void;
   onClose: (trade: Trade) => void;
+  onAddPosition: (stock: string) => void;
 }
 
 function remainingQty(t: Trade): number {
@@ -53,7 +54,7 @@ type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
 
-export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose }: Props) {
+export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onAddPosition }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
 
@@ -193,6 +194,9 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             {(t.status === 'Open' || t.status === 'Partial') && (
               <button className="btn-icon btn-close" onClick={() => onClose(t)} title="Close position">✓</button>
             )}
+            {(t.status === 'Open' || t.status === 'Partial') && (
+              <button className="btn-icon" onClick={() => onAddPosition(t.stock)} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
+            )}
             <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>
             <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>
           </div>
@@ -254,7 +258,9 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             : '—'}
         </td>
         <td>—</td>
-        <td><div className="actions-cell" /></td>
+        <td><div className="actions-cell">
+          <button className="btn-icon" onClick={e => { e.stopPropagation(); onAddPosition(stock); }} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
+        </div></td>
       </tr>
     );
   };

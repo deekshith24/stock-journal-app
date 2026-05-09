@@ -127,6 +127,7 @@ export default function App() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [addPositionStock, setAddPositionStock] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Trade | null>(null);
   const [closingTrade, setClosingTrade] = useState<Trade | null>(null);
@@ -320,6 +321,13 @@ export default function App() {
 
   const handleEdit = (trade: Trade) => {
     setEditingTrade(trade);
+    setAddPositionStock(null);
+    setShowForm(true);
+  };
+
+  const handleAddPosition = (stock: string) => {
+    setEditingTrade(null);
+    setAddPositionStock(stock);
     setShowForm(true);
   };
 
@@ -567,6 +575,7 @@ export default function App() {
               onEdit={handleEdit}
               onClose={t => setClosingTrade(t)}
               onDelete={t => setDeleteConfirm(t)}
+              onAddPosition={handleAddPosition}
             />
           </>
         )}
@@ -577,11 +586,12 @@ export default function App() {
           trade={editingTrade}
           defaultTradeType={editingTrade?.trade_type ?? tradeTypeTab}
           currency={isUS ? 'USD' : 'INR'}
+          initialStock={addPositionStock ?? undefined}
           entryReasonSuggestions={entryReasonSuggestions}
           exitReasonSuggestions={exitReasonSuggestions}
           emotionSuggestions={emotionSuggestions}
           onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditingTrade(null); }}
+          onClose={() => { setShowForm(false); setEditingTrade(null); setAddPositionStock(null); }}
         />
       )}
 

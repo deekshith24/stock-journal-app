@@ -15,6 +15,7 @@ interface Props {
   trade: Trade | null;
   defaultTradeType: 'swing' | 'positional';
   currency: 'INR' | 'USD';
+  initialStock?: string;
   entryReasonSuggestions: string[];
   exitReasonSuggestions: string[];
   emotionSuggestions: string[];
@@ -41,8 +42,8 @@ function initialExits(trade: Trade | null): ExitRecord[] | null {
   return null;
 }
 
-export default function TradeForm({ trade, defaultTradeType, currency, entryReasonSuggestions, exitReasonSuggestions, emotionSuggestions, onSave, onClose }: Props) {
-  const [form, setForm] = useState<TradeEntryData>({ ...EMPTY, trade_type: defaultTradeType, entry_date: getTodayDate() });
+export default function TradeForm({ trade, defaultTradeType, currency, initialStock, entryReasonSuggestions, exitReasonSuggestions, emotionSuggestions, onSave, onClose }: Props) {
+  const [form, setForm] = useState<TradeEntryData>({ ...EMPTY, stock: initialStock ?? '', trade_type: defaultTradeType, entry_date: getTodayDate() });
   const [exits, setExits] = useState<ExitRecord[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [entryReasonPreset, setEntryReasonPreset] = useState('');
