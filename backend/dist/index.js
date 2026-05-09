@@ -8,11 +8,14 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const supabase_js_1 = require("@supabase/supabase-js");
 const routes_1 = __importDefault(require("./routes"));
+const webauthn_1 = __importDefault(require("./webauthn"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3002;
 const supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+// WebAuthn routes — no auth required (pre-authentication)
+app.use('/api/webauthn', webauthn_1.default);
 // JWT auth middleware — validates Supabase session token
 app.use('/api', async (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');

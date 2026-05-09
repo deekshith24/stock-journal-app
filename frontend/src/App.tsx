@@ -11,6 +11,8 @@ import ClosePositionModal from './components/ClosePositionModal';
 import AnalyticsPage from './components/AnalyticsPage';
 import ActivityLogPage from './components/ActivityLogPage';
 import LoginPage from './components/LoginPage';
+import FaceIDSetup from './components/FaceIDSetup';
+import FaceIDPrompt from './components/FaceIDPrompt';
 
 type FilterType = 'all' | 'open' | 'closed';
 type PageType = 'india' | 'us' | 'analytics' | 'activity';
@@ -112,6 +114,9 @@ function isPriceStale(entry: CachedPrice, exchange: string): boolean {
 export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [faceIdState, setFaceIdState] = useState<'checking' | 'prompt' | 'setup' | 'done'>('checking');
   const [currentPage, setCurrentPage] = useState<PageType>('india');
   const [tradeTypeTab, setTradeTypeTab] = useState<TradeTypeTab>('swing');
   const [usCurrency, setUsCurrency] = useState<UsCurrency>('USD');
@@ -149,11 +154,26 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setLoggedIn(!!data.session);
+      const session = data.session;
+      setLoggedIn(!!session);
+      if (session?.user) {
+        setUserId(session.user.id);
+        setUserEmail(session.user.email ?? null);
+        const credId = localStorage.getItem('webauthn_credential_id');
+        setFaceIdState(credId ? 'prompt' : 'setup');
+      }
       setAuthReady(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setLoggedIn(!!session);
+      if (session?.user) {
+        setUserId(session.user.id);
+        setUserEmail(session.user.email ?? null);
+        const credId = localStorage.getItem('webauthn_credential_id');
+        setFaceIdState(credId ? 'prompt' : 'setup');
+      } else {
+        setFaceIdState('checking');
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -410,6 +430,21 @@ export default function App() {
   if (!authReady) return null;
   if (!loggedIn) return <LoginPage />;
 
+  const credentialId = localStorage.getItem('webauthn_credential_id');
+  if (faceIdState === 'prompt' && credentialId && userId) {
+    return <FaceIDPrompt userId={userId} credentialId={credentialId} onSuccess={() => setFaceIdState('done')} />;
+  }
+  if (faceIdState === 'setup' && userId) {
+    return (
+      <FaceIDSetup
+        userId={userId}
+        userName={userEmail ?? userId}
+        onDone={() => setFaceIdState('done')}
+        onSkip={() => setFaceIdState('done')}
+      />
+    );
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -437,7 +472,7 @@ export default function App() {
             ↓ Export
           </button>
           <button className="btn btn-ghost" onClick={() => setShowSettings(true)}>⚙ Settings</button>
-          <button className="btn btn-ghost" onClick={() => supabase.auth.signOut()} title="Sign out">Sign out</button>
+          <button className="btn btn-ghost" onClick={() => { supabase.auth.signOut(); setFaceIdState('checking'); }} title="Sign out">Sign out</button>
         </div>
       </header>
 

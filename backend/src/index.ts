@@ -3,6 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import router from './routes';
+import webauthnRouter from './webauthn';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -11,6 +12,9 @@ const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SE
 
 app.use(cors());
 app.use(express.json());
+
+// WebAuthn routes — no auth required (pre-authentication)
+app.use('/api/webauthn', webauthnRouter);
 
 // JWT auth middleware — validates Supabase session token
 app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
