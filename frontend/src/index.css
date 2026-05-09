@@ -45,6 +45,7 @@ body {
   justify-content: space-between;
   height: 52px;
   box-shadow: var(--shadow);
+  position: relative;
 }
 .app-header h1 { font-size: 18px; font-weight: 600; letter-spacing: .3px; }
 .header-actions { display: flex; gap: 8px; }
@@ -539,6 +540,89 @@ tbody td:last-child { border-right: none; }
 }
 @media (max-width: 480px) {
   .a-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ───── Mobile layout ───── */
+@media (max-width: 640px) {
+  .app-header {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .header-left {
+    flex: 1 1 100%;
+    gap: 8px;
+  }
+  .app-header h1 {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 140px);
+  }
+  .page-tab {
+    padding: 3px 9px;
+    font-size: 11px;
+  }
+  .header-actions {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    gap: 4px;
+  }
+  .header-actions .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .main-content {
+    padding: 10px 12px;
+  }
+
+  .individual-summaries {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .search-box {
+    width: 100%;
+  }
+
+  .table-scroll {
+    max-height: calc(100vh - 320px);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .modal {
+    max-height: 95vh;
+  }
+  .modal-body {
+    padding: 14px;
+  }
+  .modal-footer {
+    padding: 10px 14px;
+  }
+
+  .sub-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 400px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-tab {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
 }
 
 /* ───── Page tabs (India / US / Analytics) ───── */
