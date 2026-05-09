@@ -8,9 +8,10 @@ interface Props {
   userId: string;
   credentialId: string;
   onSuccess: () => void;
+  onCredentialNotFound?: () => void;
 }
 
-export default function FaceIDPrompt({ userId, credentialId, onSuccess }: Props) {
+export default function FaceIDPrompt({ userId, credentialId, onSuccess, onCredentialNotFound }: Props) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -37,8 +38,13 @@ export default function FaceIDPrompt({ userId, credentialId, onSuccess }: Props)
       if (!result.verified) throw new Error(result.error || 'Authentication failed');
       onSuccess();
     } catch (err) {
+      const msg = (err as Error).message;
+      if (msg.includes('Credential not found') && onCredentialNotFound) {
+        onCredentialNotFound();
+        return;
+      }
       setStatus('error');
-      setErrorMsg((err as Error).message);
+      setErrorMsg(msg);
     }
   };
 

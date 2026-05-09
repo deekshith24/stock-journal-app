@@ -432,7 +432,17 @@ export default function App() {
 
   const credentialId = localStorage.getItem('webauthn_credential_id');
   if (faceIdState === 'prompt' && credentialId && userId) {
-    return <FaceIDPrompt userId={userId} credentialId={credentialId} onSuccess={() => setFaceIdState('done')} />;
+    return (
+      <FaceIDPrompt
+        userId={userId}
+        credentialId={credentialId}
+        onSuccess={() => setFaceIdState('done')}
+        onCredentialNotFound={() => {
+          localStorage.removeItem('webauthn_credential_id');
+          setFaceIdState('setup');
+        }}
+      />
+    );
   }
   if (faceIdState === 'setup' && userId) {
     return (
