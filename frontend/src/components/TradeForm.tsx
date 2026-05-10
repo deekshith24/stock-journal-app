@@ -74,7 +74,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
       setEntryReasonPreset('');
       setExits(null);
     }
-  }, [trade, defaultTradeType, entryReasonSuggestions]);
+  }, [trade, defaultTradeType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (field: keyof TradeEntryData, value: unknown) =>
     setForm(prev => ({ ...prev, [field]: value }));
