@@ -122,7 +122,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                 </div>
                 <div className="form-group">
                   <label>Entry Quantity *</label>
-                  <input type="number" required min={isUS ? '0.000001' : '1'} step={isUS ? '0.000001' : '1'}
+                  <input type="number" required min={isUS ? '0.000001' : '1'} step={isUS ? 'any' : '1'}
                     value={form.entry_quantity || ''}
                     onChange={e => set('entry_quantity', parseFloat(e.target.value) || 0)}
                     placeholder="No. of shares" />
