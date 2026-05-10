@@ -163,6 +163,10 @@ export default function App() {
     async function initAuth(uid: string, email: string | null) {
       setUserId(uid);
       setUserEmail(email);
+      if (sessionStorage.getItem('faceIdVerified') === uid) {
+        setFaceIdState('done');
+        return;
+      }
       try {
         const res = await fetch(`${API}/api/webauthn/get-credential`, {
           method: 'POST',
@@ -472,7 +476,7 @@ export default function App() {
     return (
       <FaceIDPrompt
         userId={userId}
-        onSuccess={() => setFaceIdState('done')}
+        onSuccess={() => { sessionStorage.setItem('faceIdVerified', userId!); setFaceIdState('done'); }}
         onCredentialNotFound={() => {
           setWebauthnCredentialId(null);
           setFaceIdState('setup');
@@ -486,6 +490,7 @@ export default function App() {
         userId={userId}
         userName={userEmail ?? userId}
         onDone={(credentialId) => {
+          sessionStorage.setItem('faceIdVerified', userId!);
           setWebauthnCredentialId(credentialId);
           setFaceIdState('done');
         }}
@@ -520,7 +525,7 @@ export default function App() {
             ↓ Export
           </button>
           <button className="btn btn-ghost" onClick={() => setShowSettings(true)}>⚙ Settings</button>
-          <button className="btn btn-ghost" onClick={() => { supabase.auth.signOut(); setFaceIdState('checking'); }} title="Sign out">Sign out</button>
+          <button className="btn btn-ghost" onClick={() => { sessionStorage.removeItem('faceIdVerified'); supabase.auth.signOut(); setFaceIdState('checking'); }} title="Sign out">Sign out</button>
         </div>
       </header>
 
