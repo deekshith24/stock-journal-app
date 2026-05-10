@@ -157,6 +157,15 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className="text-right">
           <div>{fmt(entryPrice, 2, locale)}</div>
           {exitPrice != null && <div style={{ fontSize: 11, color: '#64748b' }}>→ {fmt(exitPrice, 2, locale)}</div>}
+          {t.stop_loss != null && isOpenOrPartial && (() => {
+            const sl = t.stop_loss * rateForTrade;
+            const isProtected = t.stop_loss >= t.entry_price;
+            return (
+              <div style={{ fontSize: 10, marginTop: 1, color: isProtected ? '#16a34a' : '#b45309' }}>
+                {isProtected ? '✓' : '⊘'} SL {fmt(sl, 2, locale)}
+              </div>
+            );
+          })()}
         </td>
         <td className="text-right">{fmt(invested, 0, locale)}</td>
         <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>

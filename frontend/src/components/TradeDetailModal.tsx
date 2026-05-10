@@ -112,6 +112,20 @@ export default function TradeDetailModal({ trade, currency, stockPrices, exchang
               <div><span style={labelStyle}>Date</span> {fmtDate(trade.entry_date)}</div>
               <div><span style={labelStyle}>Qty</span> {fmt(trade.entry_quantity, trade.entry_quantity % 1 === 0 ? 0 : 6, locale)}</div>
               <div><span style={labelStyle}>Price</span> {sym}{fmt(trade.entry_price, 2, locale)}</div>
+              {trade.stop_loss != null && (
+                <div>
+                  <span style={labelStyle}>Stop Loss</span>
+                  <span style={{ color: trade.stop_loss >= trade.entry_price ? '#16a34a' : '#b45309', fontWeight: 600 }}>
+                    {sym}{fmt(trade.stop_loss, 2, locale)}
+                    {' '}
+                    <span style={{ fontWeight: 400, fontSize: 11 }}>
+                      {trade.stop_loss >= trade.entry_price
+                        ? `(+${((trade.stop_loss - trade.entry_price) / trade.entry_price * 100).toFixed(1)}% · protected)`
+                        : `(${((trade.stop_loss - trade.entry_price) / trade.entry_price * 100).toFixed(1)}% risk)`}
+                    </span>
+                  </span>
+                </div>
+              )}
               {trade.pf_percentage != null && (
                 <div><span style={labelStyle}>PF %</span> {fmt(trade.pf_percentage, 2, locale)}%</div>
               )}

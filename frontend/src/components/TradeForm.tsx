@@ -8,6 +8,7 @@ interface TradeEntryData {
   entry_date: string;
   entry_quantity: number;
   entry_price: number;
+  stop_loss?: number | null;
   reason_for_entry: string;
 }
 
@@ -28,6 +29,7 @@ const EMPTY: Omit<TradeEntryData, 'entry_date'> = {
   trade_type: 'swing',
   entry_quantity: 0,
   entry_price: 0,
+  stop_loss: null,
   reason_for_entry: '',
 };
 
@@ -60,6 +62,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
         entry_date: trade.entry_date,
         entry_quantity: trade.entry_quantity,
         entry_price: trade.entry_price,
+        stop_loss: trade.stop_loss ?? null,
         reason_for_entry: trade.reason_for_entry,
       });
       const presetValue = entryReasonOptions.includes(trade.reason_for_entry)
@@ -132,6 +135,23 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                   <input type="number" required min="0" step="0.0001" value={form.entry_price || ''}
                     onChange={e => set('entry_price', parseFloat(e.target.value) || 0)}
                     placeholder="Price per share" />
+                </div>
+                <div className="form-group">
+                  <label>Stop Loss ({sym})</label>
+                  <input type="number" min="0" step="0.0001"
+                    value={form.stop_loss ?? ''}
+                    onChange={e => set('stop_loss', e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="SL price"
+                    style={form.stop_loss != null && form.entry_price > 0
+                      ? { borderColor: form.stop_loss >= form.entry_price ? '#16a34a' : '#f59e0b', background: form.stop_loss >= form.entry_price ? '#f0fdf4' : '#fffbeb' }
+                      : {}} />
+                  {form.stop_loss != null && form.entry_price > 0 && (
+                    <div style={{ fontSize: 11, marginTop: 3, color: form.stop_loss >= form.entry_price ? '#16a34a' : '#92400e' }}>
+                      {form.stop_loss >= form.entry_price
+                        ? `Protected — SL ${((form.stop_loss - form.entry_price) / form.entry_price * 100).toFixed(1)}% above entry`
+                        : `Risk: ${((form.entry_price - form.stop_loss) / form.entry_price * 100).toFixed(1)}% per share`}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Invested ({sym})</label>

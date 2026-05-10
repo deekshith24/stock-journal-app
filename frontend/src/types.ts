@@ -16,6 +16,7 @@ export interface Trade {
   exit_quantity: number | null;
   entry_price: number;
   exit_price: number | null;
+  stop_loss?: number | null;
   reason_for_entry: string;
   reason_for_exit: string;
   emotions: string;

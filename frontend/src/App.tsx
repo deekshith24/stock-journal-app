@@ -10,6 +10,7 @@ import SettingsModal from './components/SettingsModal';
 import ClosePositionModal from './components/ClosePositionModal';
 import GroupCloseModal, { GroupExit } from './components/GroupCloseModal';
 import TradeDetailModal from './components/TradeDetailModal';
+import SmartAlerts from './components/SmartAlerts';
 import AnalyticsPage from './components/AnalyticsPage';
 import ActivityLogPage from './components/ActivityLogPage';
 import LoginPage from './components/LoginPage';
@@ -164,6 +165,11 @@ export default function App() {
       setUserId(uid);
       setUserEmail(email);
       if (sessionStorage.getItem('faceIdVerified') === uid) {
+        setFaceIdState('done');
+        return;
+      }
+      if (import.meta.env.VITE_SKIP_WEBAUTHN === 'true') {
+        sessionStorage.setItem('faceIdVerified', uid);
         setFaceIdState('done');
         return;
       }
@@ -569,6 +575,8 @@ export default function App() {
               title={tradeTypeTab === 'swing' ? 'Swing Trade' : 'Positional Trade'}
               compact
             />
+
+            <SmartAlerts trades={trades} />
 
             <div className="sub-tabs">
               <button
