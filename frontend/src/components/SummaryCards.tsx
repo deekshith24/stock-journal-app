@@ -7,6 +7,7 @@ interface Props {
   dateRates?: Record<string, number>;
   stockPrices?: Record<string, StockPrice>;
   exchange: 'US' | 'IN';
+  portfolioSize?: number;
   title?: string;
   compact?: boolean;
 }
@@ -82,13 +83,16 @@ function calcMetrics(
   return { closed, realized, open, totalPL, totalPLPct, winRate, avgWin, avgLoss, openInvested, unrealizedPL, winners, losers };
 }
 
-export default function SummaryCards({ trades, currency, exchangeRate, dateRates, stockPrices, exchange, title, compact }: Props) {
+export default function SummaryCards({ trades, currency, exchangeRate, dateRates, stockPrices, exchange, portfolioSize, title, compact }: Props) {
   const sym    = currency === 'INR' ? '₹' : '$';
   const locale = currency === 'INR' ? 'en-IN' : 'en-US';
   const rate   = currency === 'INR' ? exchangeRate ?? 1 : 1;
 
   const { closed, realized, open, totalPL, totalPLPct, winRate, avgWin, avgLoss, openInvested, unrealizedPL, winners, losers } =
     calcMetrics(trades, currency, exchange, rate, dateRates, stockPrices);
+
+  const deployedPct = portfolioSize && portfolioSize > 0 ? (openInvested / portfolioSize) * 100 : null;
+  const barColor = deployedPct == null ? '#16a34a' : deployedPct > 90 ? '#dc2626' : deployedPct > 70 ? '#f59e0b' : '#16a34a';
 
   const allCards = [
     { label: 'Total Trades',      value: fmt(trades.length, 0, locale),                                                                       color: 'neutral' },
@@ -116,6 +120,30 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
   return (
     <div className={compact ? 'summary-section' : undefined}>
       {title && <div className="summary-section-title">{title}</div>}
+      {deployedPct !== null && !compact && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Capital Deployed
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: barColor }}>
+              {deployedPct.toFixed(1)}%
+            </span>
+          </div>
+          <div style={{ height: 7, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.min(deployedPct, 100)}%`,
+              background: barColor,
+              borderRadius: 4,
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+            {sym}{fmt(openInvested, 0, locale)} deployed of {sym}{fmt(portfolioSize!, 0, locale)} portfolio
+          </div>
+        </div>
+      )}
       <div className={compact ? 'summary-grid summary-grid--compact' : 'summary-grid'}>
         {cards.map(c => (
           <div key={c.label} className="summary-card">

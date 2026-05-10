@@ -11,7 +11,9 @@ interface Props {
   onEdit: (trade: Trade) => void;
   onDelete: (trade: Trade) => void;
   onClose: (trade: Trade) => void;
+  onCloseGroup: (stock: string, trades: Trade[]) => void;
   onAddPosition: (stock: string) => void;
+  onView: (trade: Trade) => void;
 }
 
 function remainingQty(t: Trade): number {
@@ -54,7 +56,7 @@ type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
 
-export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onAddPosition }: Props) {
+export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
 
@@ -139,16 +141,23 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td style={{ color: '#9aa3af', fontSize: 11 }}>{idx}</td>
         <td>
           {isChild && <span style={{ display: 'inline-block', width: 14, color: '#c1c8d0', fontSize: 10 }}>└</span>}
-          <span className="stock-name" style={isChild ? { fontSize: 12 } : undefined}>{t.stock}</span>
+          <span
+            className="stock-name"
+            style={{ ...(isChild ? { fontSize: 12 } : {}), cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}
+            onClick={() => onView(t)}
+            title="View details"
+          >{t.stock}</span>
         </td>
-        <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(t.entry_date)}</td>
-        <td style={{ whiteSpace: 'nowrap' }}>{t.exit_date ? fmtDate(t.exit_date) : <em style={{ color: '#9aa3af' }}>Open</em>}</td>
+        <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
+          {t.exit_date ? `${fmtDate(t.entry_date)} – ${fmtDate(t.exit_date)}` : fmtDate(t.entry_date)}
+        </td>
         <td><span className={`badge badge-${t.status?.toLowerCase()}`}>{t.status}</span></td>
         <td className="text-center">{t.days_in_trade}</td>
-        <td className="text-right">{fmtQty(t.entry_quantity, locale)}</td>
-        <td className="text-right">{t.exit_quantity != null ? fmtQty(t.exit_quantity, locale) : '—'}</td>
-        <td className="text-right">{fmt(entryPrice, 2, locale)}</td>
-        <td className="text-right">{exitPrice != null ? fmt(exitPrice, 2, locale) : '—'}</td>
+        <td className="text-right">{fmtQty(remainingQty(t), locale)}</td>
+        <td className="text-right">
+          <div>{fmt(entryPrice, 2, locale)}</div>
+          {exitPrice != null && <div style={{ fontSize: 11, color: '#64748b' }}>→ {fmt(exitPrice, 2, locale)}</div>}
+        </td>
         <td className="text-right">{fmt(invested, 0, locale)}</td>
         <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>
         <td>
@@ -191,7 +200,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td>
           <div className="actions-cell">
-            {(t.status === 'Open' || t.status === 'Partial') && (
+            {!isChild && (t.status === 'Open' || t.status === 'Partial') && (
               <button className="btn-icon btn-close" onClick={() => onClose(t)} title="Close position">✓</button>
             )}
             {(t.status === 'Open' || t.status === 'Partial') && (
@@ -218,10 +227,16 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
       ? bucket.reduce((s, t) => s + (currentPrice - t.entry_price) * remainingQty(t) * todayRate, 0)
       : null;
     const realizedPL = bucket.reduce((s, t) => s + (t.pl ?? 0) * todayRate, 0);
+    const realizedInvested = bucket.reduce((s, t) => {
+      const exitedQty = t.exits && t.exits.length > 0
+        ? t.exits.reduce((sum, e) => sum + e.quantity, 0)
+        : (t.exit_quantity ?? 0);
+      return s + t.entry_price * exitedQty * todayRate;
+    }, 0);
+    const realizedPLPct = realizedInvested > 0 ? (realizedPL / realizedInvested) * 100 : null;
     const anyPartial = bucket.some(t => t.status === 'Partial');
     const dates = bucket.map(t => t.entry_date).sort();
     const dateLabel = `${fmtDate(dates[0])} – ${fmtDate(dates[dates.length - 1])}`;
-    const totalExitQty = bucket.reduce((s, t) => s + (t.exit_quantity ?? 0), 0);
 
     return (
       <tr key={`group-${stock}`} className="row-open row-group" onClick={() => toggleGroup(stock)} style={{ cursor: 'pointer' }}>
@@ -234,7 +249,6 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           </span>
         </td>
         <td style={{ whiteSpace: 'nowrap', fontSize: 11, color: '#6c757d' }}>{dateLabel}</td>
-        <td><em style={{ color: '#9aa3af' }}>Open</em></td>
         <td>
           <span className={`badge ${anyPartial ? 'badge-partial' : 'badge-open'}`}>
             {anyPartial ? 'Partial' : 'Open'}
@@ -242,15 +256,18 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td className="text-center">—</td>
         <td className="text-right" style={{ fontWeight: 600 }}>{fmtQty(totalRemaining, locale)}</td>
-        <td className="text-right">{totalExitQty > 0 ? fmtQty(totalExitQty, locale) : '—'}</td>
         <td className="text-right" style={{ fontSize: 11, color: '#6c757d' }}>avg {fmt(avgEntryPrice * todayRate, 2, locale)}</td>
-        <td>—</td>
         <td className="text-right" style={{ fontWeight: 600 }}>{fmt(totalInvested, 0, locale)}</td>
         <td>—</td>
         <td>—</td>
         <td>—</td>
         <td className={`text-right ${plClass(realizedPL || null)}`}>
-          {realizedPL !== 0 ? `${realizedPL >= 0 ? '+' : ''}${fmt(realizedPL, 2, locale)}` : '—'}
+          {realizedPL !== 0
+            ? <div>
+                <div>{realizedPL >= 0 ? '+' : ''}{fmt(realizedPL, 2, locale)}</div>
+                {realizedPLPct != null && <div style={{ fontSize: 11, opacity: 0.85 }}>{realizedPLPct >= 0 ? '+' : ''}{fmt(realizedPLPct, 2, locale)}%</div>}
+              </div>
+            : '—'}
         </td>
         <td className={`text-right ${plClass(unrealizedPL)}`}>
           {unrealizedPL != null
@@ -259,6 +276,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td>—</td>
         <td><div className="actions-cell">
+          <button className="btn-icon btn-close" onClick={e => { e.stopPropagation(); onCloseGroup(stock, bucket); }} title="Close position (FIFO)">✓</button>
           <button className="btn-icon" onClick={e => { e.stopPropagation(); onAddPosition(stock); }} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
         </div></td>
       </tr>
@@ -273,14 +291,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             <tr>
               <th>#</th>
               <th>Stock</th>
-              <th>Entry Date</th>
-              <th>Exit Date</th>
+              <th>Date</th>
               <th>Status</th>
               <th>Days</th>
-              <th>Entry Qty</th>
-              <th>Exit Qty</th>
-              <th>Entry Price</th>
-              <th>Exit Price</th>
+              <th>Qty</th>
+              <th>Price ({sym})</th>
               <th>Invested ({sym})</th>
               <th>PF %</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleCol('entryReason')} title="Click to expand/collapse">

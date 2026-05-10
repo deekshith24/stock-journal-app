@@ -8,6 +8,8 @@ import TradeForm from './components/TradeForm';
 import SummaryCards from './components/SummaryCards';
 import SettingsModal from './components/SettingsModal';
 import ClosePositionModal from './components/ClosePositionModal';
+import GroupCloseModal, { GroupExit } from './components/GroupCloseModal';
+import TradeDetailModal from './components/TradeDetailModal';
 import AnalyticsPage from './components/AnalyticsPage';
 import ActivityLogPage from './components/ActivityLogPage';
 import LoginPage from './components/LoginPage';
@@ -141,6 +143,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Trade | null>(null);
   const [closingTrade, setClosingTrade] = useState<Trade | null>(null);
+  const [closingGroup, setClosingGroup] = useState<{ stock: string; trades: Trade[] } | null>(null);
+  const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   const [dateRates, setDateRates] = useState<Record<string, number>>(() => loadUsdToInrRateCache());
   const [lastUsdToInrRate, setLastUsdToInrRate] = useState<number | undefined>(() => getLatestUsdToInrInfo(loadUsdToInrRateCache()).rate);
   const [lastUsdToInrRateDate, setLastUsdToInrRateDate] = useState<string | undefined>(() => getLatestUsdToInrInfo(loadUsdToInrRateCache()).date);
@@ -420,6 +424,18 @@ export default function App() {
     }
   };
 
+  const handleCloseGroup = async (exits: GroupExit[]) => {
+    try {
+      await Promise.all(exits.map(({ tradeId, exit }) =>
+        isUS ? api.addUsExit(tradeId, exit) : api.addExit(tradeId, exit)
+      ));
+      setClosingGroup(null);
+      loadData();
+    } catch (e: unknown) {
+      alert((e as Error).message || 'Close failed');
+    }
+  };
+
   const handleExport = () => {
     exportToExcel(indiaTrades, usTrades, lastUsdToInrRate ?? 0);
   };
@@ -533,6 +549,7 @@ export default function App() {
               dateRates={dateRates}
               stockPrices={stockPrices}
               exchange={isUS ? 'US' : 'IN'}
+              portfolioSize={portfolioSize}
               title="Overall"
             />
 
@@ -660,8 +677,10 @@ export default function App() {
               stockPrices={stockPrices}
               onEdit={handleEdit}
               onClose={t => setClosingTrade(t)}
+              onCloseGroup={(stock, trades) => setClosingGroup({ stock, trades })}
               onDelete={t => setDeleteConfirm(t)}
               onAddPosition={handleAddPosition}
+              onView={t => setViewingTrade(t)}
             />
           </>
         )}
@@ -718,6 +737,29 @@ export default function App() {
           emotionSuggestions={emotionSuggestions}
           onSave={handleClosePosition}
           onClose={() => setClosingTrade(null)}
+        />
+      )}
+
+      {closingGroup && (
+        <GroupCloseModal
+          stock={closingGroup.stock}
+          trades={closingGroup.trades}
+          currency={isUS ? 'USD' : 'INR'}
+          exitReasonSuggestions={exitReasonSuggestions}
+          emotionSuggestions={emotionSuggestions}
+          onSave={handleCloseGroup}
+          onClose={() => setClosingGroup(null)}
+        />
+      )}
+
+      {viewingTrade && (
+        <TradeDetailModal
+          trade={viewingTrade}
+          currency={isUS ? 'USD' : 'INR'}
+          stockPrices={stockPrices}
+          exchange={isUS ? 'US' : 'IN'}
+          onClose={() => setViewingTrade(null)}
+          onEdit={t => { setViewingTrade(null); handleEdit(t); }}
         />
       )}
     </div>
