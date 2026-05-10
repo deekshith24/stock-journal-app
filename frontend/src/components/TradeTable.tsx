@@ -203,7 +203,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             {!isChild && (t.status === 'Open' || t.status === 'Partial') && (
               <button className="btn-icon btn-close" onClick={() => onClose(t)} title="Close position">✓</button>
             )}
-            {(t.status === 'Open' || t.status === 'Partial') && (
+            {!isChild && (t.status === 'Open' || t.status === 'Partial') && (
               <button className="btn-icon" onClick={() => onAddPosition(t.stock)} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
             )}
             <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>
@@ -226,6 +226,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
     const unrealizedPL  = currentPrice != null
       ? bucket.reduce((s, t) => s + (currentPrice - t.entry_price) * remainingQty(t) * todayRate, 0)
       : null;
+    const unrealizedPLPct = unrealizedPL != null && totalInvested > 0 ? (unrealizedPL / totalInvested) * 100 : null;
     const realizedPL = bucket.reduce((s, t) => s + (t.pl ?? 0) * todayRate, 0);
     const realizedInvested = bucket.reduce((s, t) => {
       const exitedQty = t.exits && t.exits.length > 0
@@ -271,7 +272,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td className={`text-right ${plClass(unrealizedPL)}`}>
           {unrealizedPL != null
-            ? `${unrealizedPL >= 0 ? '+' : '-'}${sym}${fmt(Math.abs(unrealizedPL), 2, locale)}`
+            ? <div>
+                <div>{unrealizedPL >= 0 ? '+' : '-'}{sym}{fmt(Math.abs(unrealizedPL), 2, locale)}</div>
+                {unrealizedPLPct != null && <div style={{ fontSize: 11, opacity: 0.85 }}>{unrealizedPLPct >= 0 ? '+' : ''}{fmt(unrealizedPLPct, 2, locale)}%</div>}
+              </div>
             : '—'}
         </td>
         <td>—</td>
