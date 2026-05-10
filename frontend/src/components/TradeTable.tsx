@@ -215,8 +215,9 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             {!isChild && (t.status === 'Open' || t.status === 'Partial') && (
               <button className="btn-icon" onClick={() => onAddPosition(t.stock)} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
             )}
-            <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>
-            <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>
+            {!isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
+            {isChild && <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>}
+            {!isChild && <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>}
           </div>
         </td>
       </tr>
@@ -291,6 +292,9 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td><div className="actions-cell">
           <button className="btn-icon btn-close" onClick={e => { e.stopPropagation(); onCloseGroup(stock, bucket); }} title="Close position (FIFO)">✓</button>
           <button className="btn-icon" onClick={e => { e.stopPropagation(); onAddPosition(stock); }} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
+          {bucket.map((t, i) => (
+            <button key={t.id} className="btn-icon" onClick={e => { e.stopPropagation(); onEdit(t); }} title={`Edit entry ${i + 1} (${fmtDate(t.entry_date)})`}>✏️{bucket.length > 1 ? <sup style={{ fontSize: 8 }}>{i + 1}</sup> : null}</button>
+          ))}
         </div></td>
       </tr>
     );
