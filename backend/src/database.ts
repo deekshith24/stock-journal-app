@@ -42,7 +42,7 @@ export async function createTrade(data: Omit<Trade, 'id' | 'created_at'>): Promi
 export async function updateTrade(id: number, data: Partial<Trade>): Promise<Trade | null> {
   const { data: trade, error } = await supabase
     .from('trades').update(data).eq('id', id).select().single();
-  if (error) return null;
+  if (error) throw new Error(error.message);
   return trade as Trade;
 }
 
@@ -77,7 +77,7 @@ export async function createUsTrade(data: Omit<Trade, 'id' | 'created_at'>): Pro
 export async function updateUsTrade(id: number, data: Partial<Trade>): Promise<Trade | null> {
   const { data: trade, error } = await supabase
     .from('us_trades').update(data).eq('id', id).select().single();
-  if (error) return null;
+  if (error) throw new Error(error.message);
   return trade as Trade;
 }
 

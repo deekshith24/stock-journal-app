@@ -446,10 +446,10 @@ export default function App() {
     }
   };
 
-  const handleUpdateGroupSL = async (trades: Trade[], stopLoss: number | null) => {
+  const handleUpdateGroupSL = async (groupTrades: Trade[], stopLoss: number | null) => {
     try {
-      await Promise.all(trades.map(t =>
-        isUS ? api.updateUsTrade(t.id!, { ...t, stop_loss: stopLoss } as any) : api.updateTrade(t.id!, { ...t, stop_loss: stopLoss } as any)
+      await Promise.all(groupTrades.map(t =>
+        isUS ? api.updateUsTrade(t.id!, { stop_loss: stopLoss } as any) : api.updateTrade(t.id!, { stop_loss: stopLoss } as any)
       ));
       loadData();
     } catch (e: unknown) {

@@ -252,6 +252,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
     const dates = bucket.map(t => t.entry_date).sort();
     const dateLabel = `${fmtDate(dates[0])} – ${fmtDate(dates[dates.length - 1])}`;
 
+    // Show group SL only when all entries share the same SL value
+    const slValues = bucket.map(t => t.stop_loss ?? null);
+    const groupSL = slValues.every(v => v === slValues[0]) ? slValues[0] : null;
+    const slIsProtected = groupSL != null && groupSL >= avgEntryPrice;
+
     return (
       <tr key={`group-${stock}`} className="row-open row-group" onClick={() => toggleGroup(stock)} style={{ cursor: 'pointer' }}>
         <td style={{ color: '#9aa3af', fontSize: 11 }}>—</td>
@@ -270,7 +275,14 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td className="text-center">—</td>
         <td className="text-right" style={{ fontWeight: 600 }}>{fmtQty(totalRemaining, locale)}</td>
-        <td className="text-right" style={{ fontSize: 11, color: '#6c757d' }}>avg {fmt(avgEntryPrice * todayRate, 2, locale)}</td>
+        <td className="text-right" style={{ fontSize: 11, color: '#6c757d' }}>
+          <div>avg {fmt(avgEntryPrice * todayRate, 2, locale)}</div>
+          {groupSL != null && (
+            <div style={{ fontSize: 10, marginTop: 1, color: slIsProtected ? '#16a34a' : '#b45309' }}>
+              {slIsProtected ? '✓' : '⊘'} SL {fmt(groupSL * todayRate, 2, locale)}
+            </div>
+          )}
+        </td>
         <td className="text-right" style={{ fontWeight: 600 }}>{fmt(totalInvested, 0, locale)}</td>
         <td>—</td>
         <td>—</td>
