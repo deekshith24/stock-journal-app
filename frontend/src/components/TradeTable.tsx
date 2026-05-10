@@ -219,8 +219,8 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
               <button className="btn-icon" onClick={() => onAddPosition(t.stock)} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
             )}
             {!isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
-            {isChild && <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>}
-            {!isChild && <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>}
+            {isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
+            <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>
           </div>
         </td>
       </tr>
