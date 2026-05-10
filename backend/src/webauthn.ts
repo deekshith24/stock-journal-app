@@ -102,12 +102,12 @@ router.post('/register-verify', async (req: Request, res: Response) => {
 
 // POST /api/webauthn/auth-options
 router.post('/auth-options', async (req: Request, res: Response) => {
-  const { user_id, credential_id } = req.body;
-  if (!user_id || !credential_id) return res.status(400).json({ error: 'user_id and credential_id required' });
+  const { user_id } = req.body;
+  if (!user_id) return res.status(400).json({ error: 'user_id required' });
 
   const options = await generateAuthenticationOptions({
     rpID: RP_ID,
-    allowCredentials: [{ id: Buffer.from(credential_id, 'base64url'), type: 'public-key' }],
+    allowCredentials: [],
     userVerification: 'preferred',
   });
 
@@ -117,15 +117,19 @@ router.post('/auth-options', async (req: Request, res: Response) => {
 
 // POST /api/webauthn/auth-verify
 router.post('/auth-verify', async (req: Request, res: Response) => {
-  const { user_id, credential_id, response } = req.body;
+  const { user_id, response } = req.body;
   const stored = challenges.get(user_id);
   if (!stored) return res.status(400).json({ error: 'Challenge expired, try again' });
   challenges.delete(user_id);
 
+  // Credential ID comes from the authenticator response itself
+  const credentialId = response.id as string;
+
   const { data: creds } = await supabase
     .from('webauthn_credentials')
     .select('*')
-    .eq('credential_id', credential_id)
+    .eq('credential_id', credentialId)
+    .eq('user_id', user_id)
     .limit(1);
 
   const cred = creds?.[0];
@@ -151,7 +155,7 @@ router.post('/auth-verify', async (req: Request, res: Response) => {
     await supabase
       .from('webauthn_credentials')
       .update({ counter: verification.authenticationInfo.newCounter })
-      .eq('credential_id', credential_id);
+      .eq('credential_id', credentialId);
 
     res.json({ verified: true });
   } catch (err) {

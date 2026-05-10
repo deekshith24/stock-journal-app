@@ -6,12 +6,11 @@ const API = import.meta.env.VITE_API_URL ?? '';
 
 interface Props {
   userId: string;
-  credentialId: string;
   onSuccess: () => void;
   onCredentialNotFound?: () => void;
 }
 
-export default function FaceIDPrompt({ userId, credentialId, onSuccess, onCredentialNotFound }: Props) {
+export default function FaceIDPrompt({ userId, onSuccess, onCredentialNotFound }: Props) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -22,7 +21,7 @@ export default function FaceIDPrompt({ userId, credentialId, onSuccess, onCreden
       const optsRes = await fetch(`${API}/api/webauthn/auth-options`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, credential_id: credentialId }),
+        body: JSON.stringify({ user_id: userId }),
       });
       const opts = await optsRes.json();
 
@@ -31,7 +30,7 @@ export default function FaceIDPrompt({ userId, credentialId, onSuccess, onCreden
       const verifyRes = await fetch(`${API}/api/webauthn/auth-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, credential_id: credentialId, response: authResponse }),
+        body: JSON.stringify({ user_id: userId, response: authResponse }),
       });
       const result = await verifyRes.json();
 

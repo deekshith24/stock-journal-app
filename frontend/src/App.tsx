@@ -452,14 +452,12 @@ export default function App() {
   if (!loggedIn) return <LoginPage />;
   if (faceIdState === 'checking') return null;
 
-  if (faceIdState === 'prompt' && webauthnCredentialId && userId) {
+  if (faceIdState === 'prompt' && userId) {
     return (
       <FaceIDPrompt
         userId={userId}
-        credentialId={webauthnCredentialId}
         onSuccess={() => setFaceIdState('done')}
         onCredentialNotFound={() => {
-          localStorage.removeItem('webauthn_credential_id');
           setWebauthnCredentialId(null);
           setFaceIdState('setup');
         }}
