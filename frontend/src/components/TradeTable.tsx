@@ -14,6 +14,7 @@ interface Props {
   onCloseGroup: (stock: string, trades: Trade[]) => void;
   onAddPosition: (stock: string) => void;
   onView: (trade: Trade) => void;
+  onUpdateGroupSL: (trades: Trade[], stopLoss: number | null) => Promise<void>;
 }
 
 function remainingQty(t: Trade): number {
@@ -56,9 +57,11 @@ type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
 
-export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView }: Props) {
+export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
+  const [editingGroupSL, setEditingGroupSL] = useState<{ stock: string; value: string } | null>(null);
+  const [savingSL, setSavingSL] = useState(false);
 
   const toggleCol = (col: string) =>
     setExpandedCols(prev => { const n = new Set(prev); n.has(col) ? n.delete(col) : n.add(col); return n; });
@@ -292,9 +295,40 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td><div className="actions-cell">
           <button className="btn-icon btn-close" onClick={e => { e.stopPropagation(); onCloseGroup(stock, bucket); }} title="Close position (FIFO)">✓</button>
           <button className="btn-icon" onClick={e => { e.stopPropagation(); onAddPosition(stock); }} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
-          {bucket.map((t, i) => (
-            <button key={t.id} className="btn-icon" onClick={e => { e.stopPropagation(); onEdit(t); }} title={`Edit entry ${i + 1} (${fmtDate(t.entry_date)})`}>✏️{bucket.length > 1 ? <sup style={{ fontSize: 8 }}>{i + 1}</sup> : null}</button>
-          ))}
+          {editingGroupSL?.stock === stock ? (
+            <span onClick={e => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <input
+                type="number" min="0" step="0.01"
+                value={editingGroupSL.value}
+                onChange={e => setEditingGroupSL({ stock, value: e.target.value })}
+                placeholder="SL price"
+                autoFocus
+                style={{ width: 72, fontSize: 11, padding: '2px 4px', border: '1px solid #cbd5e1', borderRadius: 4 }}
+              />
+              <button
+                className="btn-icon" title="Save SL" disabled={savingSL}
+                style={{ color: '#16a34a', fontWeight: 700 }}
+                onClick={async e => {
+                  e.stopPropagation();
+                  setSavingSL(true);
+                  const sl = editingGroupSL.value ? parseFloat(editingGroupSL.value) : null;
+                  await onUpdateGroupSL(bucket, sl);
+                  setEditingGroupSL(null);
+                  setSavingSL(false);
+                }}>✓</button>
+              <button className="btn-icon" title="Cancel" style={{ color: '#9ca3af' }} onClick={e => { e.stopPropagation(); setEditingGroupSL(null); }}>✕</button>
+            </span>
+          ) : (
+            <button
+              className="btn-icon"
+              title="Set Stop Loss for all entries"
+              style={{ color: '#92400e', fontSize: 11, fontWeight: 600 }}
+              onClick={e => {
+                e.stopPropagation();
+                const currentSL = bucket[0]?.stop_loss;
+                setEditingGroupSL({ stock, value: currentSL != null ? String(currentSL) : '' });
+              }}>⊘ SL</button>
+          )}
         </div></td>
       </tr>
     );

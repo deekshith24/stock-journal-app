@@ -446,6 +446,17 @@ export default function App() {
     }
   };
 
+  const handleUpdateGroupSL = async (trades: Trade[], stopLoss: number | null) => {
+    try {
+      await Promise.all(trades.map(t =>
+        isUS ? api.updateUsTrade(t.id!, { ...t, stop_loss: stopLoss } as any) : api.updateTrade(t.id!, { ...t, stop_loss: stopLoss } as any)
+      ));
+      loadData();
+    } catch (e: unknown) {
+      alert((e as Error).message || 'Failed to update stop loss');
+    }
+  };
+
   const handleExport = () => {
     exportToExcel(indiaTrades, usTrades, lastUsdToInrRate ?? 0);
   };
@@ -694,6 +705,7 @@ export default function App() {
               onDelete={t => setDeleteConfirm(t)}
               onAddPosition={handleAddPosition}
               onView={t => setViewingTrade(t)}
+              onUpdateGroupSL={handleUpdateGroupSL}
             />
           </>
         )}
