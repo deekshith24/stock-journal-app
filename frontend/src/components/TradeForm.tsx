@@ -70,11 +70,11 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
       setEntryReasonPreset(presetValue);
       setExits(initialExits(trade));
     } else {
-      setForm({ ...EMPTY, trade_type: defaultTradeType, entry_date: getTodayDate() });
+      setForm({ ...EMPTY, stock: initialStock ?? '', trade_type: defaultTradeType, entry_date: getTodayDate() });
       setEntryReasonPreset('');
       setExits(null);
     }
-  }, [trade, defaultTradeType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [trade, defaultTradeType, initialStock]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (field: keyof TradeEntryData, value: unknown) =>
     setForm(prev => ({ ...prev, [field]: value }));
