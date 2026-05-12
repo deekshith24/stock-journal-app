@@ -12,24 +12,18 @@ function isSlExit(reason: string): boolean {
   return SL_KEYWORDS.some(kw => r.includes(kw));
 }
 
-function getConsecutiveSlCount(trades: Trade[]): number {
+function getRecentSlCount(trades: Trade[], window = 10): number {
   const closed = [...trades]
-    .filter(t => t.status === 'Closed' && t.reason_for_exit)
-    .sort((a, b) => {
-      const da = (t: Trade) => t.exit_date ?? t.entry_date;
-      return da(b).localeCompare(da(a)); // newest first
-    });
+    .filter(t => t.status === 'Closed')
+    .sort((a, b) => (b.exit_date ?? b.entry_date).localeCompare(a.exit_date ?? a.entry_date))
+    .slice(0, window);
 
-  let count = 0;
-  for (const t of closed) {
+  return closed.filter(t => {
     const exits = t.exits ?? [];
-    const slInExits = exits.length > 0
+    return exits.length > 0
       ? exits.some(e => isSlExit(e.reason ?? ''))
       : isSlExit(t.reason_for_exit ?? '');
-    if (slInExits) count++;
-    else break;
-  }
-  return count;
+  }).length;
 }
 
 function getRecentWinRate(trades: Trade[], n = 8): { winRate: number; count: number } | null {
@@ -49,12 +43,12 @@ export default function SmartAlerts({ trades }: Props) {
 
   const alerts: { id: string; level: 'warning' | 'danger'; title: string; body: string }[] = [];
 
-  const slCount = getConsecutiveSlCount(trades);
+  const slCount = getRecentSlCount(trades);
   if (slCount >= 2) {
     alerts.push({
       id: `sl-${slCount}`,
       level: slCount >= 4 ? 'danger' : 'warning',
-      title: `${slCount} consecutive stop losses`,
+      title: `${slCount} stop losses in last 10 trades`,
       body: slCount >= 4
         ? 'Consider sitting out — your strategy may not suit current conditions.'
         : 'Review your setups before the next entry. Market may not be aligned.',

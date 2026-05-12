@@ -457,6 +457,16 @@ export default function App() {
     }
   };
 
+  const handleConvertToPositional = async (trade: Trade) => {
+    if (!trade.id) return;
+    try {
+      await (isUS ? api.updateUsTrade(trade.id, { trade_type: 'positional' } as any) : api.updateTrade(trade.id, { trade_type: 'positional' } as any));
+      loadData();
+    } catch (e: unknown) {
+      alert((e as Error).message || 'Failed to convert trade type');
+    }
+  };
+
   const handleExport = () => {
     exportToExcel(indiaTrades, usTrades, lastUsdToInrRate ?? 0);
   };
@@ -706,6 +716,7 @@ export default function App() {
               onAddPosition={handleAddPosition}
               onView={t => setViewingTrade(t)}
               onUpdateGroupSL={handleUpdateGroupSL}
+              onConvertToPositional={handleConvertToPositional}
             />
           </>
         )}

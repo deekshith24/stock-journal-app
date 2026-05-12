@@ -15,6 +15,7 @@ interface Props {
   onAddPosition: (stock: string) => void;
   onView: (trade: Trade) => void;
   onUpdateGroupSL: (trades: Trade[], stopLoss: number | null) => Promise<void>;
+  onConvertToPositional: (trade: Trade) => Promise<void>;
 }
 
 function remainingQty(t: Trade): number {
@@ -57,7 +58,12 @@ type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
 
-export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL }: Props) {
+function parseDays(d: string | undefined): number {
+  if (!d) return 0;
+  return parseInt(d, 10) || 0;
+}
+
+export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
   const [editingGroupSL, setEditingGroupSL] = useState<{ stock: string; value: string } | null>(null);
@@ -128,6 +134,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
     const stockKey    = `${t.stock}:${exchange}`;
     const currentPrice = stockPrices?.[stockKey]?.currentPrice;
     const isOpenOrPartial = t.status === 'Open' || t.status === 'Partial';
+    const isOverdueSwing  = isOpenOrPartial && (t.trade_type === 'swing' || !t.trade_type) && parseDays(t.days_in_trade) > 9;
     const unrealizedPL = isOpenOrPartial && currentPrice != null
       ? (currentPrice - t.entry_price) * remainingQty(t) * todayRate
       : null;
@@ -150,6 +157,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             onClick={() => onView(t)}
             title="View details"
           >{t.stock}</span>
+          {isOverdueSwing && (
+            <span title={`Swing trade held ${t.days_in_trade} — consider moving to Positional`} style={{ marginLeft: 5, fontSize: 9, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 3, padding: '1px 4px', fontWeight: 700, verticalAlign: 'middle' }}>
+              ⏱ {t.days_in_trade}
+            </span>
+          )}
         </td>
         <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
           {t.exit_date ? `${fmtDate(t.entry_date)} – ${fmtDate(t.exit_date)}` : fmtDate(t.entry_date)}
@@ -163,9 +175,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           {t.stop_loss != null && isOpenOrPartial && (() => {
             const sl = t.stop_loss * rateForTrade;
             const isProtected = t.stop_loss >= t.entry_price;
+            const slPct = ((t.stop_loss - t.entry_price) / t.entry_price) * 100;
             return (
               <div style={{ fontSize: 10, marginTop: 1, color: isProtected ? '#16a34a' : '#b45309' }}>
                 {isProtected ? '✓' : '⊘'} SL {fmt(sl, 2, locale)}
+                <span style={{ marginLeft: 3, opacity: 0.85 }}>({slPct >= 0 ? '+' : ''}{fmt(slPct, 1, locale)}%)</span>
               </div>
             );
           })()}
@@ -217,6 +231,14 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             )}
             {!isChild && (t.status === 'Open' || t.status === 'Partial') && (
               <button className="btn-icon" onClick={() => onAddPosition(t.stock)} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
+            )}
+            {isOverdueSwing && !isChild && (
+              <button
+                className="btn-icon"
+                title="Move to Positional"
+                style={{ color: '#7c3aed', fontSize: 10, fontWeight: 700 }}
+                onClick={() => onConvertToPositional(t)}
+              >→ Pos</button>
             )}
             {!isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
             {isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
@@ -280,6 +302,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           {groupSL != null && (
             <div style={{ fontSize: 10, marginTop: 1, color: slIsProtected ? '#16a34a' : '#b45309' }}>
               {slIsProtected ? '✓' : '⊘'} SL {fmt(groupSL * todayRate, 2, locale)}
+              {avgEntryPrice > 0 && (
+                <span style={{ marginLeft: 3, opacity: 0.85 }}>
+                  ({(() => { const p = ((groupSL - avgEntryPrice) / avgEntryPrice) * 100; return `${p >= 0 ? '+' : ''}${fmt(p, 1, locale)}`; })()}%)
+                </span>
+              )}
             </div>
           )}
         </td>
