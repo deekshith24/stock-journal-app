@@ -552,14 +552,20 @@ tbody td:last-child { border-right: none; }
   }
   .header-left {
     flex: 1 1 100%;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
   .app-header h1 {
     font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100vw - 140px);
+    max-width: calc(100vw - 130px);
+  }
+  .page-tabs {
+    width: 100%;
+    overflow-x: auto;
   }
   .page-tab {
     padding: 3px 9px;
