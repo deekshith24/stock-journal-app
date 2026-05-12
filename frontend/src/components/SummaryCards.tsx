@@ -105,15 +105,15 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
   const riskBarColor = openRiskPct == null ? '#16a34a' : openRiskPct > 3 ? '#dc2626' : openRiskPct > 1 ? '#f59e0b' : '#16a34a';
 
   const allCards = [
-    { label: 'Total Trades',      value: fmt(trades.length, 0, locale),                                                                       color: 'neutral' },
-    { label: 'Open Positions',    value: fmt(open.length, 0, locale),                                                                          color: 'neutral' },
-    { label: 'Capital in Open',   value: `${sym}${fmt(openInvested, 0, locale)}`,                                                              color: 'neutral' },
-    { label: 'Unrealised P/L',    value: `${unrealizedPL >= 0 ? '+' : '-'}${sym}${fmt(Math.abs(unrealizedPL), 2, locale)}`,                   color: unrealizedPL > 0 ? 'green' : unrealizedPL < 0 ? 'red' : 'neutral' },
-    { label: 'Realised P/L',      value: `${totalPL >= 0 ? '+' : '-'}${sym}${fmt(Math.abs(totalPL), 2, locale)}`,                             color: totalPL > 0 ? 'green' : totalPL < 0 ? 'red' : 'neutral' },
-    { label: 'P/L %',             value: `${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}%`,                                            color: totalPLPct > 0 ? 'green' : totalPLPct < 0 ? 'red' : 'neutral' },
-    { label: 'Win Rate',          value: realized.length ? `${winRate.toFixed(1)}%` : '—',                                                    color: winRate >= 50 ? 'green' : 'red' },
-    { label: `Avg Win (${sym})`,  value: winners.length ? `+${sym}${fmt(avgWin, 2, locale)}` : '—',                                           color: 'green' },
-    { label: `Avg Loss (${sym})`, value: losers.length  ? `-${sym}${fmt(Math.abs(avgLoss), 2, locale)}` : '—',                                color: losers.length ? 'red' : 'neutral' },
+    { label: 'Total Trades',      value: fmt(trades.length, 0, locale),                                                                       color: 'neutral', mask: false },
+    { label: 'Open Positions',    value: fmt(open.length, 0, locale),                                                                          color: 'neutral', mask: false },
+    { label: 'Capital in Open',   value: `${sym}${fmt(openInvested, 0, locale)}`,                                                              color: 'neutral', mask: true },
+    { label: 'Unrealised P/L',    value: `${unrealizedPL >= 0 ? '+' : '-'}${sym}${fmt(Math.abs(unrealizedPL), 2, locale)}`,                   color: unrealizedPL > 0 ? 'green' : unrealizedPL < 0 ? 'red' : 'neutral', mask: true },
+    { label: 'Realised P/L',      value: `${totalPL >= 0 ? '+' : '-'}${sym}${fmt(Math.abs(totalPL), 2, locale)}`,                             color: totalPL > 0 ? 'green' : totalPL < 0 ? 'red' : 'neutral', mask: true },
+    { label: 'P/L %',             value: `${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}%`,                                            color: totalPLPct > 0 ? 'green' : totalPLPct < 0 ? 'red' : 'neutral', mask: false },
+    { label: 'Win Rate',          value: realized.length ? `${winRate.toFixed(1)}%` : '—',                                                    color: winRate >= 50 ? 'green' : 'red', mask: false },
+    { label: `Avg Win (${sym})`,  value: winners.length ? `+${sym}${fmt(avgWin, 2, locale)}` : '—',                                           color: 'green', mask: true },
+    { label: `Avg Loss (${sym})`, value: losers.length  ? `-${sym}${fmt(Math.abs(avgLoss), 2, locale)}` : '—',                                color: losers.length ? 'red' : 'neutral', mask: true },
   ];
 
   const compactCards = [
@@ -150,7 +150,7 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
             }} />
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-            {sym}{fmt(openInvested, 0, locale)} deployed of {sym}{fmt(portfolioSize!, 0, locale)} portfolio
+            <span className="mask-price">{sym}{fmt(openInvested, 0, locale)}</span> deployed of <span className="mask-price">{sym}{fmt(portfolioSize!, 0, locale)}</span> portfolio
           </div>
         </div>
       )}
@@ -176,7 +176,7 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', gap: 12 }}>
             {openRisk > 0
-              ? <span>{sym}{fmt(openRisk, 0, locale)} at risk if SL hit ({atRiskCount} position{atRiskCount !== 1 ? 's' : ''})</span>
+              ? <span><span className="mask-price">{sym}{fmt(openRisk, 0, locale)}</span> at risk if SL hit ({atRiskCount} position{atRiskCount !== 1 ? 's' : ''})</span>
               : <span>No capital at risk</span>}
             {protectedCount > 0 && (
               <span style={{ color: '#16a34a' }}>✓ {protectedCount} protected (SL in profit)</span>
@@ -188,7 +188,9 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
         {cards.map(c => (
           <div key={c.label} className="summary-card">
             <div className="label">{c.label}</div>
-            <div className={`value ${c.color}`}>{c.value}</div>
+            <div className={`value ${c.color}`}>
+              {c.mask ? <span className="mask-price">{c.value}</span> : c.value}
+            </div>
           </div>
         ))}
       </div>

@@ -170,21 +170,21 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className="text-center">{t.days_in_trade}</td>
         <td className="text-right">{fmtQty(remainingQty(t), locale)}</td>
         <td className="text-right">
-          <div>{fmt(entryPrice, 2, locale)}</div>
-          {exitPrice != null && <div style={{ fontSize: 11, color: '#64748b' }}>→ {fmt(exitPrice, 2, locale)}</div>}
+          <div><span className="mask-price">{fmt(entryPrice, 2, locale)}</span></div>
+          {exitPrice != null && <div style={{ fontSize: 11, color: '#64748b' }}>→ <span className="mask-price">{fmt(exitPrice, 2, locale)}</span></div>}
           {t.stop_loss != null && isOpenOrPartial && (() => {
             const sl = t.stop_loss * rateForTrade;
             const isProtected = t.stop_loss >= t.entry_price;
             const slPct = ((t.stop_loss - t.entry_price) / t.entry_price) * 100;
             return (
               <div style={{ fontSize: 10, marginTop: 1, color: isProtected ? '#16a34a' : '#b45309' }}>
-                {isProtected ? '✓' : '⊘'} SL {fmt(sl, 2, locale)}
+                {isProtected ? '✓' : '⊘'} SL <span className="mask-price">{fmt(sl, 2, locale)}</span>
                 <span style={{ marginLeft: 3, opacity: 0.85 }}>({slPct >= 0 ? '+' : ''}{fmt(slPct, 1, locale)}%)</span>
               </div>
             );
           })()}
         </td>
-        <td className="text-right">{fmt(invested, 0, locale)}</td>
+        <td className="text-right"><span className="mask-price">{fmt(invested, 0, locale)}</span></td>
         <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>
         <td>
           {t.reason_for_entry
@@ -203,7 +203,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className={`text-right ${plClass(pl)}`}>
           {pl != null && pl !== 0
             ? <div>
-                <div>{pl > 0 ? '+' : ''}{fmt(pl, 2, locale)}</div>
+                <div><span className="mask-price">{pl > 0 ? '+' : ''}{fmt(pl, 2, locale)}</span></div>
                 {t.pl_percentage != null && t.pl_percentage !== 0 &&
                   <div style={{ fontSize: 11, opacity: 0.85 }}>{t.pl_percentage > 0 ? '+' : ''}{fmt(t.pl_percentage, 2, locale)}%</div>}
               </div>
@@ -212,7 +212,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className={`text-right ${plClass(unrealizedPL)}`}>
           {unrealizedPL != null
             ? <div>
-                <div>{unrealizedPL >= 0 ? '+' : '-'}{sym}{fmt(Math.abs(unrealizedPL), 2, locale)}</div>
+                <div><span className="mask-price">{unrealizedPL >= 0 ? '+' : '-'}{sym}{fmt(Math.abs(unrealizedPL), 2, locale)}</span></div>
                 <div style={{ fontSize: 11, opacity: 0.85 }}>{unrealizedPLPct! >= 0 ? '+' : ''}{fmt(unrealizedPLPct!, 2, locale)}%</div>
               </div>
             : '—'}
@@ -298,10 +298,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className="text-center">—</td>
         <td className="text-right" style={{ fontWeight: 600 }}>{fmtQty(totalRemaining, locale)}</td>
         <td className="text-right" style={{ fontSize: 11, color: '#6c757d' }}>
-          <div>avg {fmt(avgEntryPrice * todayRate, 2, locale)}</div>
+          <div>avg <span className="mask-price">{fmt(avgEntryPrice * todayRate, 2, locale)}</span></div>
           {groupSL != null && (
             <div style={{ fontSize: 10, marginTop: 1, color: slIsProtected ? '#16a34a' : '#b45309' }}>
-              {slIsProtected ? '✓' : '⊘'} SL {fmt(groupSL * todayRate, 2, locale)}
+              {slIsProtected ? '✓' : '⊘'} SL <span className="mask-price">{fmt(groupSL * todayRate, 2, locale)}</span>
               {avgEntryPrice > 0 && (
                 <span style={{ marginLeft: 3, opacity: 0.85 }}>
                   ({(() => { const p = ((groupSL - avgEntryPrice) / avgEntryPrice) * 100; return `${p >= 0 ? '+' : ''}${fmt(p, 1, locale)}`; })()}%)
@@ -310,14 +310,14 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             </div>
           )}
         </td>
-        <td className="text-right" style={{ fontWeight: 600 }}>{fmt(totalInvested, 0, locale)}</td>
+        <td className="text-right" style={{ fontWeight: 600 }}><span className="mask-price">{fmt(totalInvested, 0, locale)}</span></td>
         <td>—</td>
         <td>—</td>
         <td>—</td>
         <td className={`text-right ${plClass(realizedPL || null)}`}>
           {realizedPL !== 0
             ? <div>
-                <div>{realizedPL >= 0 ? '+' : ''}{fmt(realizedPL, 2, locale)}</div>
+                <div><span className="mask-price">{realizedPL >= 0 ? '+' : ''}{fmt(realizedPL, 2, locale)}</span></div>
                 {realizedPLPct != null && <div style={{ fontSize: 11, opacity: 0.85 }}>{realizedPLPct >= 0 ? '+' : ''}{fmt(realizedPLPct, 2, locale)}%</div>}
               </div>
             : '—'}
@@ -325,7 +325,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className={`text-right ${plClass(unrealizedPL)}`}>
           {unrealizedPL != null
             ? <div>
-                <div>{unrealizedPL >= 0 ? '+' : '-'}{sym}{fmt(Math.abs(unrealizedPL), 2, locale)}</div>
+                <div><span className="mask-price">{unrealizedPL >= 0 ? '+' : '-'}{sym}{fmt(Math.abs(unrealizedPL), 2, locale)}</span></div>
                 {unrealizedPLPct != null && <div style={{ fontSize: 11, opacity: 0.85 }}>{unrealizedPLPct >= 0 ? '+' : ''}{fmt(unrealizedPLPct, 2, locale)}%</div>}
               </div>
             : '—'}

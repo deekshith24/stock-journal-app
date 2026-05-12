@@ -631,6 +631,13 @@ tbody td:last-child { border-right: none; }
   }
 }
 
+/* ───── Price masking ───── */
+.prices-masked .mask-price {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
 /* ───── Page tabs (India / US / Analytics) ───── */
 .header-left { display: flex; align-items: center; gap: 16px; }
 

@@ -150,6 +150,7 @@ export default function App() {
   const [lastUsdToInrRate, setLastUsdToInrRate] = useState<number | undefined>(() => getLatestUsdToInrInfo(loadUsdToInrRateCache()).rate);
   const [lastUsdToInrRateDate, setLastUsdToInrRateDate] = useState<string | undefined>(() => getLatestUsdToInrInfo(loadUsdToInrRateCache()).date);
   const [stockPrices, setStockPrices] = useState<Record<string, StockPrice>>({});
+  const [maskPrices, setMaskPrices] = useState(false);
   const [lastPriceFetchedAt, setLastPriceFetchedAt] = useState<Date | null>(() => {
     const cache = loadStockPriceCache();
     const times = Object.values(cache).map(e => new Date(e.fetchedAt).getTime());
@@ -548,6 +549,9 @@ export default function App() {
           </div>
         </div>
         <div className="header-actions">
+          <button className="btn btn-ghost" onClick={() => setMaskPrices((m: boolean) => !m)} title={maskPrices ? 'Show prices' : 'Hide prices'}>
+            {maskPrices ? '👁' : '🙈'}
+          </button>
           <button className="btn btn-ghost" onClick={handleExport} title="Export all trades to Excel">
             ↓ Export
           </button>
@@ -556,7 +560,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="main-content">
+      <main className={`main-content${maskPrices ? ' prices-masked' : ''}`}>
         {error && (
           <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>
             ⚠ {error}
