@@ -477,6 +477,31 @@ export default function App() {
     loadData();
   };
 
+  // Lock body scroll when any modal is open — prevents background scroll on iOS/Android
+  const anyModalOpen = showForm || showSettings || !!deleteConfirm || !!closingTrade || !!closingGroup || !!viewingTrade;
+  useEffect(() => {
+    if (anyModalOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      const top = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (top) window.scrollTo(0, -parseInt(top, 10));
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [anyModalOpen]);
+
   // Auto-refresh prices after each market's daily close
   useEffect(() => {
     const id = setInterval(() => {
