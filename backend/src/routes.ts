@@ -49,20 +49,38 @@ function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promis
 }
 
 async function postJson<T>(url: string, body: unknown, headers: Record<string, string> = {}): Promise<T> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(body),
+  return new Promise((resolve, reject) => {
+    const opts = new URL(url);
+    const payload = JSON.stringify(body);
+    const requestOptions = {
+      hostname: opts.hostname,
+      path: opts.pathname + opts.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        ...headers,
+      },
+    };
+    const req = https.request(requestOptions, res => {
+      let responseBody = '';
+      res.on('data', chunk => { responseBody += chunk; });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(JSON.parse(responseBody) as T);
+          } catch (parseError) {
+            reject(new Error(`Invalid JSON response: ${parseError}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${res.statusCode}: ${responseBody}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
   });
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${text}`);
-  }
-  try {
-    return JSON.parse(text) as T;
-  } catch (error) {
-    throw new Error(`Invalid JSON response: ${error}`);
-  }
 }
 
 function buildAiPrompt(question: string, trades: JournalTrade[], market: 'india' | 'us'): string {
