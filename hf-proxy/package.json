@@ -4,7 +4,8 @@
   "description": "Small proxy service that forwards /infer to Hugging Face Inference API using its own HF_API_TOKEN",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "build": "echo \"no build step for hf-proxy\""
   },
   "license": "MIT",
   "dependencies": {
