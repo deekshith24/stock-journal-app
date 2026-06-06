@@ -1,0 +1,20 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build output
+dist/
+frontend/dist/
+backend/dist/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+
+# VSCodium / VS Code
+.vscode/
