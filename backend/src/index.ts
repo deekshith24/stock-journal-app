@@ -27,6 +27,11 @@ app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
 
 app.use('/api', router);
 
+const hfTokenPresent = Boolean(process.env.HF_API_TOKEN);
+const hfModel = process.env.HF_MODEL || 'google/flan-t5-small';
+console.log(`Hugging Face model: ${hfModel}`);
+console.log(`HF_API_TOKEN present: ${hfTokenPresent ? 'yes' : 'no'}`);
+
 app.listen(PORT, () => {
   console.log(`Stock Journal API running on http://localhost:${PORT}`);
 });
