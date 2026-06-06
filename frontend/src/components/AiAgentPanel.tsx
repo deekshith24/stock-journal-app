@@ -11,7 +11,7 @@ interface Props {
   settings: Settings;
 }
 
-type Message = { role: 'user' | 'assistant'; text: string; source?: 'hf' | 'fallback' };
+type Message = { role: 'user' | 'assistant'; text: string; source?: 'static' };
 
 type Analysis = {
   totalTrades: number;
@@ -209,7 +209,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
         throw new Error(message);
       }
 
-      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; error?: string };
+      const data = await response.json() as { answer: string; source: 'static'; error?: string };
       const assistantText = data.answer || generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: assistantText, source: data.source }]);
       if (data.error) {
@@ -217,7 +217,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       }
     } catch (err: unknown) {
       const fallback = generateResponse(question, analysis, currency, locale);
-      setMessages(prev => [...prev, { role: 'assistant', text: fallback, source: 'fallback' }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: fallback, source: 'static' }]);
       const rawMessage = err instanceof Error ? err.message : String(err);
       setError(rawMessage);
     } finally {
@@ -279,7 +279,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
               {message.text}
               {message.role === 'assistant' && message.source && (
                 <div style={{ marginTop: 10, fontSize: 11, color: '#6b7280' }}>
-                  Source: {message.source === 'hf' ? 'AI' : 'Static analysis'}{message.source === 'fallback' ? ' (fallback)' : ''}
+                  Source: Static analysis
                 </div>
               )}
             </div>

@@ -1,4 +1,3 @@
-import https from 'https';
 import { Router, Request, Response } from 'express';
 import {
   getAllTrades, getTradeById, createTrade, updateTrade, deleteTrade,
@@ -17,81 +16,6 @@ type JournalTrade = Trade & {
 };
 
 const router = Router();
-
-function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const opts = new URL(url);
-    const reqOptions = {
-      hostname: opts.hostname,
-      path: opts.pathname + opts.search,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; StockJournal/1.0)',
-        ...headers,
-      },
-    };
-    https.get(reqOptions, res => {
-      let body = '';
-      res.on('data', chunk => { body += chunk; });
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(body) as T;
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(parsed);
-          } else {
-            reject(new Error(`HTTP ${res.statusCode}: ${body}`));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }).on('error', reject);
-  });
-}
-
-async function postJson<T>(url: string, body: unknown, headers: Record<string, string> = {}): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const opts = new URL(url);
-    const payload = JSON.stringify(body);
-    const requestOptions = {
-      hostname: opts.hostname,
-      path: opts.pathname + opts.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-        ...headers,
-      },
-    };
-    const req = https.request(requestOptions, res => {
-      let responseBody = '';
-      res.on('data', chunk => { responseBody += chunk; });
-      res.on('end', () => {
-        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            resolve(JSON.parse(responseBody) as T);
-          } catch (parseError) {
-            reject(new Error(`Invalid JSON response: ${parseError}`));
-          }
-        } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${responseBody}`));
-        }
-      });
-    });
-    req.on('error', reject);
-    req.write(payload);
-    req.end();
-  });
-}
-
-function buildAiPrompt(question: string, trades: JournalTrade[], market: 'india' | 'us'): string {
-  const openPartial = trades.filter(t => t.status === 'Open' || t.status === 'Partial');
-  const closed = trades.filter(t => t.status === 'Closed').sort((a, b) => b.entry_date.localeCompare(a.entry_date));
-  const openSummary = openPartial.slice(0, 20).map(t => `${t.stock}: ${t.status}, ${t.entry_quantity}@${t.entry_price}, days ${t.days_in_trade || 'n/a'}, reason: ${t.reason_for_entry || 'n/a'}`).join('\n');
-  const closedSummary = closed.slice(0, 20).map(t => `${t.stock}: ${t.entry_quantity}@${t.entry_price}, P/L% ${t.pl_percentage?.toFixed(1) ?? 'n/a'}, days ${t.days_in_trade || 'n/a'}, reason: ${t.reason_for_entry || 'n/a'}`).join('\n');
-  const marketLabel = market === 'us' ? 'US' : 'India';
-
-  return `You are a trading journal assistant. Analyze the following journal data and answer the user's question concisely and directly. Use only the data provided and do not invent any trade details.\n\nMarket: ${marketLabel}\nQuestion: ${question}\n\nOpen/Partial positions:\n${openSummary || 'None'}\n\nRecent closed trades:\n${closedSummary || 'None'}\n\nIf the question asks about market condition, stalled trades, partial booking, risk exposure, or trade health, answer using the data above.`;
-}
 
 function summarizeTradesForRules(trades: JournalTrade[], market: 'india' | 'us') {
   const openPartial = trades.filter(t => t.status === 'Open' || t.status === 'Partial');
@@ -172,58 +96,6 @@ function buildRuleBasedAiResponse(question: string, trades: JournalTrade[], mark
   return answers.join(' ');
 }
 
-async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[], market: 'india' | 'us'): Promise<string> {
-  const prompt = buildAiPrompt(question, trades, market);
-  const model = process.env.HF_MODEL || 'google/flan-t5-small';
-  const token = process.env.HF_API_TOKEN;
-  if (!token) {
-    throw new Error('Missing HF_API_TOKEN. Set HF_API_TOKEN in backend environment to enable AI inference.');
-  }
-  const url = `https://api-inference.huggingface.co/models/${model}`;
-  const body = {
-    inputs: prompt,
-    parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
-    options: { wait_for_model: true, use_cache: false },
-  };
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-
-  // Retry transient network errors a few times (DNS, timeouts, resets)
-  const maxAttempts = 3;
-  let attempt = 0;
-  let lastError: unknown = null;
-  let result: unknown = null;
-  while (attempt < maxAttempts) {
-    try {
-      result = await postJson<unknown>(url, body, headers);
-      break;
-    } catch (err: unknown) {
-      lastError = err;
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.includes('HTTP 401') || message.includes('Missing') || message.includes('Invalid')) {
-        break;
-      }
-      attempt += 1;
-      const backoff = 300 * Math.pow(2, attempt);
-      await new Promise(r => setTimeout(r, backoff));
-    }
-  }
-  if (result == null) {
-    throw lastError instanceof Error ? lastError : new Error(String(lastError ?? 'Unknown HF error'));
-  }
-  if (typeof result === 'string') return result;
-  const resultData = result as any;
-  if (Array.isArray(resultData) && resultData.length > 0 && typeof resultData[0] === 'object' && resultData[0] !== null && 'generated_text' in resultData[0]) {
-    return resultData[0].generated_text;
-  }
-  if (typeof resultData === 'object' && resultData !== null && 'generated_text' in resultData) {
-    return resultData.generated_text;
-  }
-  if (typeof resultData === 'object' && resultData !== null && 'error' in resultData) {
-    throw new Error(`HF API error: ${resultData.error}`);
-  }
-  throw new Error(`Unexpected HF response shape: ${JSON.stringify(resultData)}`);
-}
-
 function parseDate(dateString: string): Date {
   const [year, month, day] = dateString.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day));
@@ -251,6 +123,15 @@ function calcDaysInTrade(entryDate: string, exitDate: string | null): string {
   const exit = exitDate ? parseDate(exitDate) : new Date();
   const days = countTradingDays(entry, exit);
   return `${Math.max(0, days)}d`;
+}
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+  }
+  return response.json() as Promise<T>;
 }
 
 function enrichTrade(trade: Trade, portfolioSize: number) {
@@ -458,13 +339,9 @@ router.post('/ai/analysis', async (req: Request, res: Response) => {
   const payloadTrades = trades.length > 0 ? trades : market === 'us'
     ? enrichAll(await getAllUsTrades(), settings.us_portfolio_size)
     : enrichAll(await getAllTrades(), settings.portfolio_size);
-  try {
-    const aiText = await callHuggingFaceAnalysis(question, payloadTrades, market);
-    res.json({ answer: aiText, source: 'hf' as const });
-  } catch (_error: unknown) {
-    const fallbackText = buildRuleBasedAiResponse(question, payloadTrades, market);
-    res.json({ answer: fallbackText, source: 'fallback' as const });
-  }
+
+  const answer = buildRuleBasedAiResponse(question, payloadTrades, market);
+  res.json({ answer, source: 'static' as const });
 });
 
 // ── US trades ─────────────────────────────────────────────────────────────────
