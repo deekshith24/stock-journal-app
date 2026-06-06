@@ -181,12 +181,26 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
   }
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 
-  const url = `https://api-inference.huggingface.co/models/${model}`;
-  const body = {
-    inputs: prompt,
-    parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
-    options: { wait_for_model: true, use_cache: false },
-  };
+  const hfProxy = process.env.HF_PROXY_URL?.replace(/\/+$/, '');
+  let url: string;
+  let body: unknown;
+  if (hfProxy) {
+    // Proxy expects POST /infer with { model, inputs, parameters, options }
+    url = `${hfProxy}/infer`;
+    body = {
+      model,
+      inputs: prompt,
+      parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
+      options: { wait_for_model: true, use_cache: false },
+    };
+  } else {
+    url = `https://api-inference.huggingface.co/models/${model}`;
+    body = {
+      inputs: prompt,
+      parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
+      options: { wait_for_model: true, use_cache: false },
+    };
+  }
   console.log('Calling Hugging Face inference', { model, promptLength: prompt.length, tokenPresent: Boolean(token) });
 
   // Retry transient network errors a few times (DNS, timeouts, resets)
