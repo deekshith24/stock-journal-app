@@ -239,6 +239,7 @@ export default function App() {
       ? settings.us_portfolio_size * (lastUsdToInrRate || 1)
       : settings.us_portfolio_size
     : settings.portfolio_size;
+  const tenPercentCapital = portfolioSize * 0.1;
 
   const loadData = useCallback(async () => {
     try {
@@ -726,9 +727,14 @@ export default function App() {
               )}
 
               <div className="spacer" />
-              <span style={{ fontSize: 11, color: '#6c757d' }}>
-                Portfolio: {sym}{portfolioSize.toLocaleString(locale)}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                <span style={{ fontSize: 11, color: '#6c757d' }}>
+                  Portfolio: {sym}{portfolioSize.toLocaleString(locale)}
+                </span>
+                <span style={{ fontSize: 11, color: '#0f766e' }}>
+                  10% capital: {sym}{tenPercentCapital.toLocaleString(locale, { maximumFractionDigits: 0 })}
+                </span>
+              </div>
             </div>
 
             <TradeTable
