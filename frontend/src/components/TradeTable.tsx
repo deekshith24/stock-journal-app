@@ -58,6 +58,24 @@ type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
 
+function getRecentWinRate(trades: Trade[], n = 8): { winRate: number; count: number } | null {
+  const recent = [...trades]
+    .filter(t => t.status === 'Closed' && t.pl != null)
+    .sort((a, b) => (b.exit_date ?? b.entry_date).localeCompare(a.exit_date ?? a.entry_date))
+    .slice(0, n);
+  if (recent.length < 4) return null;
+  const wins = recent.filter(t => (t.pl ?? 0) > 0).length;
+  return { winRate: (wins / recent.length) * 100, count: recent.length };
+}
+
+function marketModeFromTrades(trades: Trade[]): 'choppy' | 'bull' | 'neutral' {
+  const recent = getRecentWinRate(trades);
+  if (!recent) return 'neutral';
+  if (recent.winRate < 35) return 'choppy';
+  if (recent.winRate >= 60) return 'bull';
+  return 'neutral';
+}
+
 function parseDays(d: string | undefined): number {
   if (!d) return 0;
   return parseInt(d, 10) || 0;
@@ -98,6 +116,9 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
       </div>
     );
   }
+
+  // Determine market mode from recent trades
+  const marketMode = marketModeFromTrades(trades); // 'choppy' | 'bull' | 'neutral'
 
   // Group open/partial trades by stock — only stocks with 2+ concurrent positions get a parent row
   const openPartialMap = new Map<string, Trade[]>();
@@ -153,6 +174,23 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
     const unrealizedPLPct = isOpenOrPartial && currentPrice != null
       ? ((currentPrice - t.entry_price) / t.entry_price) * 100
       : null;
+
+    // Suggest booking partial when holding full position and target reached depending on market mode
+    const isFullPosition = Math.abs(remainingQty(t) - t.entry_quantity) < 1e-8;
+    let partialSuggest = false;
+    let partialSuggestLabel = '';
+    if (isFullPosition && isOpenOrPartial && unrealizedPLPct != null) {
+      if (marketMode === 'choppy' && unrealizedPLPct >= 10) {
+        partialSuggest = true;
+        partialSuggestLabel = 'Book 30% (choppy: 10%+)';
+      } else if (marketMode === 'bull' && unrealizedPLPct >= 15) {
+        partialSuggest = true;
+        partialSuggestLabel = 'Book 30% (bull: 15%+)';
+      } else if (marketMode === 'neutral' && unrealizedPLPct >= 12) {
+        partialSuggest = true;
+        partialSuggestLabel = 'Book 30% (12%+)';
+      }
+    }
     const entryPrice = t.entry_price * rateForTrade;
     const exitPrice  = t.exit_price != null ? t.exit_price * rateForTrade : null;
     const invested   = t.invested != null ? t.invested * rateForTrade : undefined;
@@ -176,6 +214,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             onClick={() => onView(t)}
             title={isStalled ? 'Held more than 10 trading days but not moving up — consider exiting' : 'View details'}
           >{t.stock}</span>
+          {partialSuggest && (
+            <span title={`Suggestion: ${partialSuggestLabel} — you hold full position`} style={{ marginLeft: 6, fontSize: 11, background: '#ecffe6', color: '#065f46', border: '1px solid #bbf7d0', borderRadius: 3, padding: '1px 6px', fontWeight: 700, verticalAlign: 'middle' }}>
+              Book 30%
+            </span>
+          )}
           {isStalled && (
             <span title="Consider exiting — held over 10 trading days without moving in the expected direction" style={{ marginLeft: 5, fontSize: 10, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: 3, padding: '1px 4px', fontWeight: 700, verticalAlign: 'middle' }}>
               ⚠ Exit?
@@ -312,6 +355,19 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           <span className="stock-name" style={{ color: isStalledGroup ? '#dc2626' : undefined }} title={isStalledGroup ? 'Some entries are stalled for over 10 trading days — consider exiting' : undefined}>
             {stock}
           </span>
+          {/* Group-level partial suggestion: if all entries are full positions and group unrealized meets threshold */}
+          {bucket.every(t => Math.abs(remainingQty(t) - t.entry_quantity) < 1e-8) && unrealizedPLPct != null && (() => {
+            let groupSuggest = false;
+            let label = '';
+            if (marketMode === 'choppy' && unrealizedPLPct >= 10) { groupSuggest = true; label = 'Group: Book 30% (choppy)'; }
+            else if (marketMode === 'bull' && unrealizedPLPct >= 15) { groupSuggest = true; label = 'Group: Book 30% (bull)'; }
+            else if (marketMode === 'neutral' && unrealizedPLPct >= 12) { groupSuggest = true; label = 'Group: Book 30% (12%+)'; }
+            return groupSuggest ? (
+              <span title={label} style={{ marginLeft: 6, fontSize: 11, background: '#ecffe6', color: '#065f46', border: '1px solid #bbf7d0', borderRadius: 3, padding: '1px 6px', fontWeight: 700, verticalAlign: 'middle' }}>
+                Book 30%
+              </span>
+            ) : null;
+          })()}
           {isStalledGroup && (
             <span title="Consider exiting — held over 10 trading days without moving in the expected direction" style={{ marginLeft: 5, fontSize: 10, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: 3, padding: '1px 4px', fontWeight: 700, verticalAlign: 'middle' }}>
               ⚠ Exit?
