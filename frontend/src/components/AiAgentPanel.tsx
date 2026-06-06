@@ -176,7 +176,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     setMessages(prev => [...prev, { role: 'user', text: question }]);
     setLoading(true);
 
-    const apiUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
+    const configuredApiUrl = import.meta.env.VITE_API_URL;
+    if (!configuredApiUrl) {
+      console.warn('VITE_API_URL is not set. Using frontend origin as API host. If backend is hosted separately, set VITE_API_URL to the backend URL.');
+    }
+    const apiUrl = configuredApiUrl ?? window.location.origin;
     const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
     const session = await supabase.auth.getSession();
     const accessToken = session.data.session?.access_token;
@@ -213,7 +217,12 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       const fallback = generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: fallback, source: 'fallback' }]);
       console.error('AI assistant fetch error:', err);
-      setError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('Failed to fetch')) {
+        setError(`Failed to reach AI backend at ${endpoint}. Check VITE_API_URL and backend availability.`);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
