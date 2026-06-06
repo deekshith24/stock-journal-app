@@ -188,7 +188,32 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
     options: { wait_for_model: true, use_cache: false },
   };
   console.log('Calling Hugging Face inference', { model, promptLength: prompt.length, tokenPresent: Boolean(token) });
-  const result = await postJson<unknown>(url, body, headers);
+
+  // Retry transient network errors a few times (DNS, timeouts, resets)
+  const maxAttempts = 3;
+  let attempt = 0;
+  let lastError: unknown = null;
+  let result: unknown = null;
+  while (attempt < maxAttempts) {
+    try {
+      result = await postJson<unknown>(url, body, headers);
+      break;
+    } catch (err: unknown) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`HF inference attempt ${attempt + 1} failed: ${message}`);
+      // If it's clearly non-transient (auth, bad request), don't retry
+      if (message.includes('HTTP 401') || message.includes('Missing') || message.includes('Invalid')) {
+        break;
+      }
+      attempt += 1;
+      const backoff = 300 * Math.pow(2, attempt);
+      await new Promise(r => setTimeout(r, backoff));
+    }
+  }
+  if (result == null) {
+    throw lastError instanceof Error ? lastError : new Error(String(lastError ?? 'Unknown HF error'));
+  }
   if (typeof result === 'string') return result;
   const resultData = result as any;
   if (Array.isArray(resultData) && resultData.length > 0 && typeof resultData[0] === 'object' && resultData[0] !== null && 'generated_text' in resultData[0]) {
