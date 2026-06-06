@@ -169,6 +169,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   const configuredApiUrl = import.meta.env.VITE_API_URL;
   const apiUrl = configuredApiUrl ?? window.location.origin;
@@ -196,6 +197,8 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     try {
       const session = await supabase.auth.getSession();
       const accessToken = session.data.session?.access_token;
+      const sessionDetails = session.data?.session;
+      setDebugInfo(`Endpoint: ${endpoint}\nAuth token present: ${Boolean(accessToken)}\nSession present: ${Boolean(sessionDetails)}\nUser ID: ${sessionDetails?.user?.id ?? 'none'}\nUser email: ${sessionDetails?.user?.email ?? 'unknown'}`);
       if (!accessToken) {
         const authError = 'Unauthorized: no Supabase access token found. Please sign in again.';
         setError(authError);
@@ -277,6 +280,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       {apiWarning && (
         <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#fef3c7', color: '#92400e', fontSize: 12 }}>
           {apiWarning}
+        </div>
+      )}
+      {debugInfo && (
+        <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#eef2ff', color: '#1e3a8a', fontSize: 12, whiteSpace: 'pre-wrap' }}>
+          {debugInfo}
         </div>
       )}
 
