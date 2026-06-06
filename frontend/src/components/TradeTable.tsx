@@ -63,6 +63,17 @@ function parseDays(d: string | undefined): number {
   return parseInt(d, 10) || 0;
 }
 
+function isStalledTrade(t: Trade, currentPrice?: number): boolean {
+  if (!(t.status === 'Open' || t.status === 'Partial')) return false;
+  if (parseDays(t.days_in_trade) <= 10) return false;
+  if (currentPrice == null) return false;
+  // Consider stalled if price hasn't moved up (<= entry) or has moved <= 1% in either direction
+  const entry = t.entry_price || 0;
+  if (entry <= 0) return false;
+  const pctMove = Math.abs((currentPrice - entry) / entry) * 100;
+  return currentPrice <= entry || pctMove <= 1;
+}
+
 export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
@@ -135,6 +146,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
     const currentPrice = stockPrices?.[stockKey]?.currentPrice;
     const isOpenOrPartial = t.status === 'Open' || t.status === 'Partial';
     const isOverdueSwing  = isOpenOrPartial && (t.trade_type === 'swing' || !t.trade_type) && parseDays(t.days_in_trade) > 9;
+    const isStalled = isStalledTrade(t, currentPrice);
     const unrealizedPL = isOpenOrPartial && currentPrice != null
       ? (currentPrice - t.entry_price) * remainingQty(t) * todayRate
       : null;
@@ -153,10 +165,22 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           {isChild && <span style={{ display: 'inline-block', width: 14, color: '#c1c8d0', fontSize: 10 }}>└</span>}
           <span
             className="stock-name"
-            style={{ ...(isChild ? { fontSize: 12 } : {}), cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}
+            style={{
+              ...(isChild ? { fontSize: 12 } : {}),
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dotted',
+              textUnderlineOffset: 3,
+              color: isStalled ? '#dc2626' : undefined,
+            }}
             onClick={() => onView(t)}
-            title="View details"
+            title={isStalled ? 'Held more than 10 trading days but not moving up — consider exiting' : 'View details'}
           >{t.stock}</span>
+          {isStalled && (
+            <span title="Consider exiting — held over 10 trading days without moving in the expected direction" style={{ marginLeft: 5, fontSize: 10, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: 3, padding: '1px 4px', fontWeight: 700, verticalAlign: 'middle' }}>
+              ⚠ Exit?
+            </span>
+          )}
           {isOverdueSwing && (
             <span title={`Swing trade held ${t.days_in_trade} — consider moving to Positional`} style={{ marginLeft: 5, fontSize: 9, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 3, padding: '1px 4px', fontWeight: 700, verticalAlign: 'middle' }}>
               ⏱ {t.days_in_trade}
@@ -273,6 +297,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
     const anyPartial = bucket.some(t => t.status === 'Partial');
     const dates = bucket.map(t => t.entry_date).sort();
     const dateLabel = `${fmtDate(dates[0])} – ${fmtDate(dates[dates.length - 1])}`;
+    const isStalledGroup = bucket.some(t => isStalledTrade(t, currentPrice));
 
     // Show group SL only when all entries share the same SL value
     const slValues = bucket.map(t => t.stop_loss ?? null);
@@ -284,7 +309,14 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td style={{ color: '#9aa3af', fontSize: 11 }}>—</td>
         <td>
           <span style={{ marginRight: 6, fontSize: 11, color: '#6c757d' }}>{isExpanded ? '▼' : '▶'}</span>
-          <span className="stock-name">{stock}</span>
+          <span className="stock-name" style={{ color: isStalledGroup ? '#dc2626' : undefined }} title={isStalledGroup ? 'Some entries are stalled for over 10 trading days — consider exiting' : undefined}>
+            {stock}
+          </span>
+          {isStalledGroup && (
+            <span title="Consider exiting — held over 10 trading days without moving in the expected direction" style={{ marginLeft: 5, fontSize: 10, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: 3, padding: '1px 4px', fontWeight: 700, verticalAlign: 'middle' }}>
+              ⚠ Exit?
+            </span>
+          )}
           <span style={{ marginLeft: 6, fontSize: 10, background: '#dbeafe', color: '#1e40af', borderRadius: 4, padding: '1px 5px', fontWeight: 700 }}>
             {bucket.length} entries
           </span>

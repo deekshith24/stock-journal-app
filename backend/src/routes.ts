@@ -39,11 +39,33 @@ function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promis
   });
 }
 
+function parseDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function countTradingDays(startDate: Date, endDate: Date): number {
+  if (endDate < startDate) return 0;
+
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current < endDate) {
+    current.setUTCDate(current.getUTCDate() + 1);
+    const day = current.getUTCDay();
+    if (day !== 0 && day !== 6) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
 function calcDaysInTrade(entryDate: string, exitDate: string | null): string {
-  const entry = new Date(entryDate);
-  const exit = exitDate ? new Date(exitDate) : new Date();
-  const diff = Math.round((exit.getTime() - entry.getTime()) / (1000 * 60 * 60 * 24));
-  return `${Math.max(0, diff)}d`;
+  const entry = parseDate(entryDate);
+  const exit = exitDate ? parseDate(exitDate) : new Date();
+  const days = countTradingDays(entry, exit);
+  return `${Math.max(0, days)}d`;
 }
 
 function enrichTrade(trade: Trade, portfolioSize: number) {
