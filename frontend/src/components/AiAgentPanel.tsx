@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
+import { supabase } from '../supabaseClient';
 import { Trade, Settings, StockPrice } from '../types';
 
 interface Props {
@@ -176,11 +177,19 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     setLoading(true);
 
     const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+    if (!accessToken) {
+      throw new Error('Not authenticated. Please sign in again.');
+    }
 
     try {
       const response = await fetch(`${apiBase}/ai/analysis`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({ market, question, trades }),
       });
 
