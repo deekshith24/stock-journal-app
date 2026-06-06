@@ -18,10 +18,6 @@ app.use('/api/webauthn', webauthnRouter);
 
 // JWT auth middleware — validates Supabase session token
 app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
-  if (req.path === '/ai/status' && req.method === 'GET') {
-    return next();
-  }
-
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   const { data, error } = await supabase.auth.getUser(token);
@@ -30,11 +26,6 @@ app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use('/api', router);
-
-const hfTokenPresent = Boolean(process.env.HF_API_TOKEN);
-const hfModel = process.env.HF_MODEL || 'google/flan-t5-small';
-console.log(`Hugging Face model: ${hfModel}`);
-console.log(`HF_API_TOKEN present: ${hfTokenPresent ? 'yes' : 'no'}`);
 
 app.listen(PORT, () => {
   console.log(`Stock Journal API running on http://localhost:${PORT}`);

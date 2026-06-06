@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trade, Settings, StockPrice } from '../types';
 
@@ -169,34 +169,9 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
-  const [backendStatus, setBackendStatus] = useState<string | null>(null);
 
-  const configuredApiUrl = import.meta.env.VITE_API_URL;
-  const apiUrl = configuredApiUrl ?? window.location.origin;
+  const apiUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
   const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
-  const apiDebug = configuredApiUrl
-    ? `Using configured backend host: ${apiUrl}`
-    : `VITE_API_URL is not set; using current origin: ${apiUrl}`;
-  const apiWarning = !configuredApiUrl ? 'Set VITE_API_URL in your frontend env to the backend host, for example https://stock-journal-app.onrender.com.' : null;
-
-  useEffect(() => {
-    const checkBackend = async () => {
-      try {
-        const statusRes = await fetch(`${apiBase}/ai/status`);
-        if (!statusRes.ok) {
-          setBackendStatus(`Backend status check failed: ${statusRes.status} ${statusRes.statusText}`);
-          return;
-        }
-        const statusData = await statusRes.json();
-        setBackendStatus(`Backend reachable: ${statusData.ai_enabled ? 'yes' : 'no'}; model=${statusData.model}; token=${statusData.hf_token_present ? 'present' : 'missing'}`);
-      } catch (statusError: unknown) {
-        setBackendStatus(`Backend status fetch failed: ${statusError instanceof Error ? statusError.message : String(statusError)}`);
-      }
-    };
-
-    void checkBackend();
-  }, [apiBase]);
 
   const askAssistant = async (question: string) => {
     if (!question.trim()) return;
@@ -204,20 +179,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     setMessages(prev => [...prev, { role: 'user', text: question }]);
     setLoading(true);
 
-    const configuredApiUrl = import.meta.env.VITE_API_URL;
-    if (!configuredApiUrl) {
-      console.warn('VITE_API_URL is not set. Using frontend origin as API host. If backend is hosted separately, set VITE_API_URL to the backend URL.');
-    }
-    const apiUrl = configuredApiUrl ?? window.location.origin;
-    const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
     const endpoint = `${apiBase}/ai/analysis`;
-    console.log('AI assistant request URL:', endpoint);
 
     try {
       const session = await supabase.auth.getSession();
       const accessToken = session.data.session?.access_token;
-      const sessionDetails = session.data?.session;
-      setDebugInfo(`Endpoint: ${endpoint}\nAuth token present: ${Boolean(accessToken)}\nSession present: ${Boolean(sessionDetails)}\nUser ID: ${sessionDetails?.user?.id ?? 'none'}\nUser email: ${sessionDetails?.user?.email ?? 'unknown'}`);
       if (!accessToken) {
         const authError = 'Unauthorized: no Supabase access token found. Please sign in again.';
         setError(authError);
@@ -243,23 +209,17 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
         throw new Error(message);
       }
 
-      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; ai_connected: boolean; error?: string; hf_token_present?: boolean; model?: string };
+      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; error?: string };
       const assistantText = data.answer || generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: assistantText, source: data.source }]);
-      if (!data.ai_connected) {
-        setError(data.error || 'AI connection is unavailable; using static analysis fallback.');
+      if (data.error) {
+        setError(data.error);
       }
     } catch (err: unknown) {
       const fallback = generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: fallback, source: 'fallback' }]);
       const rawMessage = err instanceof Error ? err.message : String(err);
-      console.error('AI assistant fetch error:', rawMessage, { endpoint });
-      const normalized = rawMessage.toLowerCase();
-      if (normalized.includes('fetch') || normalized.includes('network')) {
-        setError(`Cannot reach AI backend at ${endpoint}. Error: ${rawMessage}. Check VITE_API_URL and backend availability.`);
-      } else {
-        setError(`${rawMessage} (endpoint: ${endpoint})`);
-      }
+      setError(rawMessage);
     } finally {
       setLoading(false);
     }
@@ -293,24 +253,6 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
           <span style={{ fontSize: 12, color: '#1f2937', background: '#eef2ff', borderRadius: 999, padding: '4px 10px' }}>{currency}</span>
         </div>
       </div>
-      <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#eef2ff', color: '#1d4ed8', fontSize: 12 }}>
-        {apiDebug}
-      </div>
-      {apiWarning && (
-        <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#fef3c7', color: '#92400e', fontSize: 12 }}>
-          {apiWarning}
-        </div>
-      )}
-      {backendStatus && (
-        <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#eef2ff', color: '#1e3a8a', fontSize: 12, whiteSpace: 'pre-wrap' }}>
-          {backendStatus}
-        </div>
-      )}
-      {debugInfo && (
-        <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#eef2ff', color: '#1e3a8a', fontSize: 12, whiteSpace: 'pre-wrap' }}>
-          {debugInfo}
-        </div>
-      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         {quickButtons.map(btn => (

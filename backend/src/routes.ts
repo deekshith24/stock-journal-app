@@ -179,29 +179,13 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
   if (!token) {
     throw new Error('Missing HF_API_TOKEN. Set HF_API_TOKEN in backend environment to enable AI inference.');
   }
+  const url = `https://api-inference.huggingface.co/models/${model}`;
+  const body = {
+    inputs: prompt,
+    parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
+    options: { wait_for_model: true, use_cache: false },
+  };
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-
-  const hfProxy = process.env.HF_PROXY_URL?.replace(/\/+$/, '');
-  let url: string;
-  let body: unknown;
-  if (hfProxy) {
-    // Proxy expects POST /infer with { model, inputs, parameters, options }
-    url = `${hfProxy}/infer`;
-    body = {
-      model,
-      inputs: prompt,
-      parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
-      options: { wait_for_model: true, use_cache: false },
-    };
-  } else {
-    url = `https://api-inference.huggingface.co/models/${model}`;
-    body = {
-      inputs: prompt,
-      parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
-      options: { wait_for_model: true, use_cache: false },
-    };
-  }
-  console.log('Calling Hugging Face inference', { model, promptLength: prompt.length, tokenPresent: Boolean(token) });
 
   // Retry transient network errors a few times (DNS, timeouts, resets)
   const maxAttempts = 3;
@@ -215,8 +199,6 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
     } catch (err: unknown) {
       lastError = err;
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`HF inference attempt ${attempt + 1} failed: ${message}`);
-      // If it's clearly non-transient (auth, bad request), don't retry
       if (message.includes('HTTP 401') || message.includes('Missing') || message.includes('Invalid')) {
         break;
       }
@@ -468,12 +450,6 @@ router.put('/trades/:id/exits', async (req: Request, res: Response) => {
   res.json(enrichTrade(updated, portfolio_size));
 });
 
-router.get('/ai/status', (_req: Request, res: Response) => {
-  const hfTokenPresent = Boolean(process.env.HF_API_TOKEN);
-  const model = process.env.HF_MODEL || 'google/flan-t5-small';
-  res.json({ hf_token_present: hfTokenPresent, model, ai_enabled: hfTokenPresent, timestamp: new Date().toISOString() });
-});
-
 router.post('/ai/analysis', async (req: Request, res: Response) => {
   const market = req.body.market === 'us' ? 'us' : 'india';
   const question = String(req.body.question || 'Summarize the journal and highlight anything important.');
@@ -482,17 +458,12 @@ router.post('/ai/analysis', async (req: Request, res: Response) => {
   const payloadTrades = trades.length > 0 ? trades : market === 'us'
     ? enrichAll(await getAllUsTrades(), settings.us_portfolio_size)
     : enrichAll(await getAllTrades(), settings.portfolio_size);
-  const hfTokenPresent = Boolean(process.env.HF_API_TOKEN);
-  const model = process.env.HF_MODEL || 'google/flan-t5-small';
-
   try {
     const aiText = await callHuggingFaceAnalysis(question, payloadTrades, market);
-    res.json({ answer: aiText, source: 'hf' as const, ai_connected: true, hf_token_present: hfTokenPresent, model });
-  } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : String(error);
+    res.json({ answer: aiText, source: 'hf' as const });
+  } catch (_error: unknown) {
     const fallbackText = buildRuleBasedAiResponse(question, payloadTrades, market);
-    console.error('AI analysis fallback:', errMsg, { hfTokenPresent, model, question: question.slice(0, 120) });
-    res.json({ answer: fallbackText, source: 'fallback' as const, ai_connected: false, hf_token_present: hfTokenPresent, model, error: errMsg });
+    res.json({ answer: fallbackText, source: 'fallback' as const });
   }
 });
 
