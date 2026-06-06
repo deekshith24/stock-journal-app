@@ -170,6 +170,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const configuredApiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = configuredApiUrl ?? window.location.origin;
+  const apiBase = `${apiUrl.replace(/\/+$|\s+/g, '')}/api`;
+  const apiWarning = !configuredApiUrl ? 'Using frontend origin as API host. If your backend is hosted separately, set VITE_API_URL to the backend URL.' : null;
+
   const askAssistant = async (question: string) => {
     if (!question.trim()) return;
     setError(null);
@@ -257,6 +262,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
           <span style={{ fontSize: 12, color: '#1f2937', background: '#eef2ff', borderRadius: 999, padding: '4px 10px' }}>{currency}</span>
         </div>
       </div>
+      {apiWarning && (
+        <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#fef3c7', color: '#92400e', fontSize: 12 }}>
+          {apiWarning}
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         {quickButtons.map(btn => (
