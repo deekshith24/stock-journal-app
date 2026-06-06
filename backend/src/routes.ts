@@ -410,6 +410,12 @@ router.put('/trades/:id/exits', async (req: Request, res: Response) => {
   res.json(enrichTrade(updated, portfolio_size));
 });
 
+router.get('/ai/status', (_req: Request, res: Response) => {
+  const hfTokenPresent = Boolean(process.env.HF_API_TOKEN);
+  const model = process.env.HF_MODEL || 'google/flan-t5-small';
+  res.json({ hf_token_present: hfTokenPresent, model, ai_enabled: hfTokenPresent, timestamp: new Date().toISOString() });
+});
+
 router.post('/ai/analysis', async (req: Request, res: Response) => {
   const market = req.body.market === 'us' ? 'us' : 'india';
   const question = String(req.body.question || 'Summarize the journal and highlight anything important.');
@@ -418,15 +424,17 @@ router.post('/ai/analysis', async (req: Request, res: Response) => {
   const payloadTrades = trades.length > 0 ? trades : market === 'us'
     ? enrichAll(await getAllUsTrades(), settings.us_portfolio_size)
     : enrichAll(await getAllTrades(), settings.portfolio_size);
+  const hfTokenPresent = Boolean(process.env.HF_API_TOKEN);
+  const model = process.env.HF_MODEL || 'google/flan-t5-small';
 
   try {
     const aiText = await callHuggingFaceAnalysis(question, payloadTrades, market);
-    res.json({ answer: aiText, source: 'hf' as const, ai_connected: true });
+    res.json({ answer: aiText, source: 'hf' as const, ai_connected: true, hf_token_present: hfTokenPresent, model });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
     const fallbackText = buildRuleBasedAiResponse(question, payloadTrades, market);
-    console.error('AI analysis fallback:', errMsg);
-    res.json({ answer: fallbackText, source: 'fallback' as const, ai_connected: false, error: errMsg });
+    console.error('AI analysis fallback:', errMsg, { hfTokenPresent, model });
+    res.json({ answer: fallbackText, source: 'fallback' as const, ai_connected: false, hf_token_present: hfTokenPresent, model, error: errMsg });
   }
 });
 
