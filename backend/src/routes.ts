@@ -169,6 +169,7 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
     parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
     options: { wait_for_model: true, use_cache: false },
   };
+  console.log('Calling Hugging Face inference', { model, promptLength: prompt.length, tokenPresent: Boolean(token) });
   const result = await postJson<unknown>(url, body, headers);
   if (typeof result === 'string') return result;
   const resultData = result as any;
@@ -179,9 +180,9 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
     return resultData.generated_text;
   }
   if (typeof resultData === 'object' && resultData !== null && 'error' in resultData) {
-    throw new Error(resultData.error);
+    throw new Error(`HF API error: ${resultData.error}`);
   }
-  return JSON.stringify(result);
+  throw new Error(`Unexpected HF response shape: ${JSON.stringify(resultData)}`);
 }
 
 function parseDate(dateString: string): Date {
@@ -433,7 +434,7 @@ router.post('/ai/analysis', async (req: Request, res: Response) => {
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
     const fallbackText = buildRuleBasedAiResponse(question, payloadTrades, market);
-    console.error('AI analysis fallback:', errMsg, { hfTokenPresent, model });
+    console.error('AI analysis fallback:', errMsg, { hfTokenPresent, model, question: question.slice(0, 120) });
     res.json({ answer: fallbackText, source: 'fallback' as const, ai_connected: false, hf_token_present: hfTokenPresent, model, error: errMsg });
   }
 });
