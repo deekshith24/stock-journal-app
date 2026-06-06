@@ -13,6 +13,7 @@ import TradeDetailModal from './components/TradeDetailModal';
 import SmartAlerts from './components/SmartAlerts';
 import AnalyticsPage from './components/AnalyticsPage';
 import ActivityLogPage from './components/ActivityLogPage';
+import AiAgentPanel from './components/AiAgentPanel';
 import LoginPage from './components/LoginPage';
 import FaceIDSetup from './components/FaceIDSetup';
 import FaceIDPrompt from './components/FaceIDPrompt';
@@ -146,6 +147,7 @@ export default function App() {
   const [closingTrade, setClosingTrade] = useState<Trade | null>(null);
   const [closingGroup, setClosingGroup] = useState<{ stock: string; trades: Trade[] } | null>(null);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [dateRates, setDateRates] = useState<Record<string, number>>(() => loadUsdToInrRateCache());
   const [lastUsdToInrRate, setLastUsdToInrRate] = useState<number | undefined>(() => getLatestUsdToInrInfo(loadUsdToInrRateCache()).rate);
   const [lastUsdToInrRateDate, setLastUsdToInrRateDate] = useState<string | undefined>(() => getLatestUsdToInrInfo(loadUsdToInrRateCache()).date);
@@ -234,6 +236,7 @@ export default function App() {
   const exchangeRate = isUS && displayCurrency === 'INR' ? lastUsdToInrRate : undefined;
   const sym = displayCurrency === 'INR' ? '₹' : '$';
   const locale = displayCurrency === 'INR' ? 'en-IN' : 'en-US';
+  const isJournalPage = currentPage === 'india' || currentPage === 'us';
   const portfolioSize = isUS
     ? displayCurrency === 'INR'
       ? settings.us_portfolio_size * (lastUsdToInrRate || 1)
@@ -833,6 +836,34 @@ export default function App() {
           onClose={() => setViewingTrade(null)}
           onEdit={t => { setViewingTrade(null); handleEdit(t); }}
         />
+      )}
+
+      {isJournalPage && (
+        <div className="assistant-widget">
+          {assistantOpen && (
+            <div className="assistant-panel">
+              <div className="assistant-panel-header">
+                <div className="assistant-panel-title">{isUS ? 'US Journal Assistant' : 'India Journal Assistant'}</div>
+                <button className="assistant-panel-close" onClick={() => setAssistantOpen(false)} aria-label="Close assistant">×</button>
+              </div>
+              <AiAgentPanel
+                trades={trades}
+                stockPrices={stockPrices}
+                currency={displayCurrency}
+                locale={locale}
+                market={currentPage}
+                settings={settings}
+              />
+            </div>
+          )}
+          <button
+            className="assistant-toggle"
+            onClick={() => setAssistantOpen(prev => !prev)}
+            aria-label={assistantOpen ? 'Minimize assistant' : 'Open assistant'}
+          >
+            {assistantOpen ? '−' : 'AI'}
+          </button>
+        </div>
       )}
     </div>
   );
