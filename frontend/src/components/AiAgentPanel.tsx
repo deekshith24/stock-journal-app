@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trade, Settings, StockPrice } from '../types';
 
@@ -170,6 +170,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const [backendStatus, setBackendStatus] = useState<string | null>(null);
 
   const configuredApiUrl = import.meta.env.VITE_API_URL;
   const apiUrl = configuredApiUrl ?? window.location.origin;
@@ -178,6 +179,24 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     ? `Using configured backend host: ${apiUrl}`
     : `VITE_API_URL is not set; using current origin: ${apiUrl}`;
   const apiWarning = !configuredApiUrl ? 'Set VITE_API_URL in your frontend env to the backend host, for example https://stock-journal-app.onrender.com.' : null;
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const statusRes = await fetch(`${apiBase}/ai/status`);
+        if (!statusRes.ok) {
+          setBackendStatus(`Backend status check failed: ${statusRes.status} ${statusRes.statusText}`);
+          return;
+        }
+        const statusData = await statusRes.json();
+        setBackendStatus(`Backend reachable: ${statusData.ai_enabled ? 'yes' : 'no'}; model=${statusData.model}; token=${statusData.hf_token_present ? 'present' : 'missing'}`);
+      } catch (statusError: unknown) {
+        setBackendStatus(`Backend status fetch failed: ${statusError instanceof Error ? statusError.message : String(statusError)}`);
+      }
+    };
+
+    void checkBackend();
+  }, [apiBase]);
 
   const askAssistant = async (question: string) => {
     if (!question.trim()) return;
@@ -280,6 +299,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       {apiWarning && (
         <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#fef3c7', color: '#92400e', fontSize: 12 }}>
           {apiWarning}
+        </div>
+      )}
+      {backendStatus && (
+        <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#eef2ff', color: '#1e3a8a', fontSize: 12, whiteSpace: 'pre-wrap' }}>
+          {backendStatus}
         </div>
       )}
       {debugInfo && (
