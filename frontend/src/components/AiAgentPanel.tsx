@@ -172,8 +172,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
 
   const configuredApiUrl = import.meta.env.VITE_API_URL;
   const apiUrl = configuredApiUrl ?? window.location.origin;
-  const apiBase = `${apiUrl.replace(/\/+$|\s+/g, '')}/api`;
-  const apiWarning = !configuredApiUrl ? 'Using frontend origin as API host. If your backend is hosted separately, set VITE_API_URL to the backend URL.' : null;
+  const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
+  const apiDebug = configuredApiUrl
+    ? `Using configured backend host: ${apiUrl}`
+    : `VITE_API_URL is not set; using current origin: ${apiUrl}`;
+  const apiWarning = !configuredApiUrl ? 'Set VITE_API_URL in your frontend env to the backend host, for example https://stock-journal-app.onrender.com.' : null;
 
   const askAssistant = async (question: string) => {
     if (!question.trim()) return;
@@ -261,6 +264,9 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
           <span style={{ fontSize: 12, color: '#1f2937', background: '#ecfdf5', borderRadius: 999, padding: '4px 10px' }}>{market === 'india' ? 'India' : 'US'}</span>
           <span style={{ fontSize: 12, color: '#1f2937', background: '#eef2ff', borderRadius: 999, padding: '4px 10px' }}>{currency}</span>
         </div>
+      </div>
+      <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#eef2ff', color: '#1d4ed8', fontSize: 12 }}>
+        {apiDebug}
       </div>
       {apiWarning && (
         <div style={{ marginBottom: 12, padding: 10, borderRadius: 10, background: '#fef3c7', color: '#92400e', fontSize: 12 }}>
