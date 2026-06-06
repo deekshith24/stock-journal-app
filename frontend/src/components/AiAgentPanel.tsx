@@ -186,11 +186,11 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
         throw new Error(await response.text());
       }
 
-      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; error?: string };
+      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; ai_connected: boolean; error?: string };
       const assistantText = data.answer || generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: assistantText, source: data.source }]);
-      if (data.source === 'fallback' && data.error) {
-        setError(`Fallback response used: ${data.error}`);
+      if (!data.ai_connected) {
+        setError(data.error || 'AI connection is unavailable; using static analysis fallback.');
       }
     } catch (err: unknown) {
       const fallback = generateResponse(question, analysis, currency, locale);

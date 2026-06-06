@@ -158,8 +158,10 @@ async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[],
   const prompt = buildAiPrompt(question, trades, market);
   const model = process.env.HF_MODEL || 'google/flan-t5-small';
   const token = process.env.HF_API_TOKEN;
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (!token) {
+    throw new Error('Missing HF_API_TOKEN. Set HF_API_TOKEN in backend environment to enable AI inference.');
+  }
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 
   const url = `https://api-inference.huggingface.co/models/${model}`;
   const body = {
@@ -419,12 +421,12 @@ router.post('/ai/analysis', async (req: Request, res: Response) => {
 
   try {
     const aiText = await callHuggingFaceAnalysis(question, payloadTrades, market);
-    res.json({ answer: aiText, source: 'hf' as const });
+    res.json({ answer: aiText, source: 'hf' as const, ai_connected: true });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
     const fallbackText = buildRuleBasedAiResponse(question, payloadTrades, market);
     console.error('AI analysis fallback:', errMsg);
-    res.json({ answer: fallbackText, source: 'fallback' as const, error: errMsg });
+    res.json({ answer: fallbackText, source: 'fallback' as const, ai_connected: false, error: errMsg });
   }
 });
 
