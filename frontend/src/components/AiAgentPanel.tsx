@@ -190,16 +190,19 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     }
     const apiUrl = configuredApiUrl ?? window.location.origin;
     const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
-    const session = await supabase.auth.getSession();
-    const accessToken = session.data.session?.access_token;
-    if (!accessToken) {
-      throw new Error('Not authenticated. Please sign in again.');
-    }
-
     const endpoint = `${apiBase}/ai/analysis`;
     console.log('AI assistant request URL:', endpoint);
 
     try {
+      const session = await supabase.auth.getSession();
+      const accessToken = session.data.session?.access_token;
+      if (!accessToken) {
+        const authError = 'Unauthorized: no Supabase access token found. Please sign in again.';
+        setError(authError);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -212,6 +215,9 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       if (!response.ok) {
         const body = await response.text();
         const message = body ? `${response.status} ${response.statusText}: ${body}` : `${response.status} ${response.statusText}`;
+        if (response.status === 401) {
+          throw new Error(`Unauthorized: backend rejected your Supabase token. Try signing out and signing back in. (${message})`);
+        }
         throw new Error(message);
       }
 
