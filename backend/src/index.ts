@@ -18,6 +18,10 @@ app.use('/api/webauthn', webauthnRouter);
 
 // JWT auth middleware — validates Supabase session token
 app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
+  if (req.path === '/ai/status' && req.method === 'GET') {
+    return next();
+  }
+
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   const { data, error } = await supabase.auth.getUser(token);
