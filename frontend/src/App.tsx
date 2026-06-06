@@ -597,6 +597,7 @@ export default function App() {
           <AnalyticsPage
             indiaTrades={indiaTrades}
             usTrades={usTrades}
+            stockPrices={stockPrices}
             settings={settings}
           />
         ) : currentPage === 'activity' ? (

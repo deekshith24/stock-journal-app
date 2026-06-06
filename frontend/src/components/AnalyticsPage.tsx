@@ -4,11 +4,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { Trade, Settings } from '../types';
+import { Trade, Settings, StockPrice } from '../types';
+import AiAgentPanel from './AiAgentPanel';
 
 interface Props {
   indiaTrades: Trade[];
   usTrades: Trade[];
+  stockPrices: Record<string, StockPrice>;
   settings: Settings;
 }
 
@@ -150,7 +152,7 @@ function PieLabel(props: any) {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 
-export default function AnalyticsPage({ indiaTrades, usTrades, settings: _settings }: Props) {
+export default function AnalyticsPage({ indiaTrades, usTrades, stockPrices, settings: _settings }: Props) {
   const [market, setMarket] = useState<'india' | 'us'>('india');
   const [period, setPeriod] = useState<TimePeriod>('ALL');
   const [customFrom, setCustomFrom] = useState('');
@@ -266,6 +268,15 @@ export default function AnalyticsPage({ indiaTrades, usTrades, settings: _settin
           <div className="a-stat-sub">average days in closed trades</div>
         </div>
       </div>
+
+      <AiAgentPanel
+        trades={trades}
+        stockPrices={stockPrices}
+        currency={market === 'india' ? 'INR' : 'USD'}
+        locale={locale}
+        market={market}
+        settings={_settings}
+      />
 
       {trades.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: '#6c757d', fontSize: 14 }}>

@@ -7,6 +7,15 @@ import {
 } from './database';
 import { Trade, ExitRecord } from './types';
 
+type JournalTrade = Trade & {
+  status?: 'Open' | 'Partial' | 'Closed';
+  pl?: number;
+  pl_percentage?: number;
+  pf_percentage?: number;
+  days_in_trade?: string;
+  reason_for_entry?: string;
+};
+
 const router = Router();
 
 function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
@@ -37,6 +46,140 @@ function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promis
       });
     }).on('error', reject);
   });
+}
+
+async function postJson<T>(url: string, body: unknown, headers: Record<string, string> = {}): Promise<T> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    throw new Error(`Invalid JSON response: ${error}`);
+  }
+}
+
+function buildAiPrompt(question: string, trades: JournalTrade[], market: 'india' | 'us'): string {
+  const openPartial = trades.filter(t => t.status === 'Open' || t.status === 'Partial');
+  const closed = trades.filter(t => t.status === 'Closed').sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+  const openSummary = openPartial.slice(0, 20).map(t => `${t.stock}: ${t.status}, ${t.entry_quantity}@${t.entry_price}, days ${t.days_in_trade || 'n/a'}, reason: ${t.reason_for_entry || 'n/a'}`).join('\n');
+  const closedSummary = closed.slice(0, 20).map(t => `${t.stock}: ${t.entry_quantity}@${t.entry_price}, P/L% ${t.pl_percentage?.toFixed(1) ?? 'n/a'}, days ${t.days_in_trade || 'n/a'}, reason: ${t.reason_for_entry || 'n/a'}`).join('\n');
+  const marketLabel = market === 'us' ? 'US' : 'India';
+
+  return `You are a trading journal assistant. Analyze the following journal data and answer the user's question concisely and directly. Use only the data provided and do not invent any trade details.\n\nMarket: ${marketLabel}\nQuestion: ${question}\n\nOpen/Partial positions:\n${openSummary || 'None'}\n\nRecent closed trades:\n${closedSummary || 'None'}\n\nIf the question asks about market condition, stalled trades, partial booking, risk exposure, or trade health, answer using the data above.`;
+}
+
+function summarizeTradesForRules(trades: JournalTrade[], market: 'india' | 'us') {
+  const openPartial = trades.filter(t => t.status === 'Open' || t.status === 'Partial');
+  const closed = trades.filter(t => t.status === 'Closed');
+  const totalPL = closed.reduce((sum, t) => sum + (t.pl ?? 0), 0);
+  const winRate = closed.length > 0 ? (closed.filter(t => (t.pl ?? 0) > 0).length / closed.length) * 100 : null;
+  const stalledTrades = openPartial.filter(t => {
+    const days = parseInt(t.days_in_trade ?? '0');
+    if (days <= 10) return false;
+    const pct = t.pl_percentage ?? 0;
+    return pct <= 1;
+  }).map(t => `${t.stock} (${t.days_in_trade})`);
+
+  const partialCandidates = openPartial.filter(t => {
+    const pct = t.pl_percentage ?? 0;
+    if (winRate == null) return pct >= 12;
+    if (winRate < 35) return pct >= 10;
+    if (winRate >= 60) return pct >= 15;
+    return pct >= 12;
+  }).map(t => `${t.stock} ${((t.pl_percentage ?? 0)).toFixed(1)}%`);
+
+  const highExposure = openPartial.filter(t => (t.pf_percentage ?? 0) >= 5)
+    .sort((a, b) => (b.pf_percentage ?? 0) - (a.pf_percentage ?? 0))
+    .map(t => `${t.stock} ${((t.pf_percentage ?? 0)).toFixed(1)}%`);
+
+  return { openPartial, closed, totalPL, winRate, stalledTrades, partialCandidates, highExposure };
+}
+
+function buildRuleBasedAiResponse(question: string, trades: JournalTrade[], market: 'india' | 'us'): string {
+  const summary = summarizeTradesForRules(trades, market);
+  const lower = question.toLowerCase();
+  const answers: string[] = [];
+
+  if (lower.includes('market') || lower.includes('condition') || lower.includes('regime')) {
+    const condition = summary.winRate == null ? 'neutral' : summary.winRate >= 60 ? 'bull' : summary.winRate < 35 ? 'choppy' : 'neutral';
+    answers.push(`Market condition appears ${condition}.`);
+    if (summary.winRate != null) answers.push(`Your win rate on closed trades is ${summary.winRate.toFixed(1)}%.`);
+    if (condition === 'choppy') answers.push('Reduce size, avoid new entries, and watch for sideways behavior.');
+    if (condition === 'bull') answers.push('Consider partial-booking winners while keeping stops in place.');
+    return answers.join(' ');
+  }
+
+  if (lower.includes('stalled') || lower.includes('slow') || lower.includes('time')) {
+    if (summary.stalledTrades.length) {
+      answers.push(`Stalled trades: ${summary.stalledTrades.slice(0, 5).join(', ')}.`);
+      answers.push('These are held more than 10 trading days with little movement; review thesis or reduce exposure.');
+    } else {
+      answers.push('No stalled trades detected at the moment. Your open positions are moving or have not been held long enough.');
+    }
+    return answers.join(' ');
+  }
+
+  if (lower.includes('partial') || lower.includes('book 30') || lower.includes('book partial')) {
+    if (summary.partialCandidates.length) {
+      answers.push(`Partial-book candidates: ${summary.partialCandidates.slice(0, 5).join(', ')}.`);
+      answers.push('Consider trimming roughly 30% on these names to lock gains while keeping the rest exposed.');
+    } else {
+      answers.push('No current partial-book candidates found with the configured thresholds. Continue monitoring open positions.');
+    }
+    return answers.join(' ');
+  }
+
+  if (lower.includes('risk') || lower.includes('exposure') || lower.includes('danger')) {
+    if (summary.highExposure.length) {
+      answers.push(`High exposure trades: ${summary.highExposure.slice(0, 5).join(', ')}.`);
+      answers.push('Watch these positions closely and avoid adding more until direction is clear.');
+    } else {
+      answers.push('No large exposure trades detected right now. Risk appears reasonably distributed.');
+    }
+    return answers.join(' ');
+  }
+
+  answers.push(`There are ${trades.length} trades in this journal.`);
+  answers.push(`Open/partial: ${summary.openPartial.length}, closed: ${summary.closed.length}.`);
+  if (summary.winRate != null) answers.push(`Win rate on closed trades is ${summary.winRate.toFixed(1)}%.`);
+  if (summary.totalPL !== 0) answers.push(`Total closed P/L is ${summary.totalPL >= 0 ? '+' : ''}${summary.totalPL.toFixed(0)}.`);
+  answers.push('Ask me about market condition, stalled trades, partial-booking candidates, or risk exposure.');
+  return answers.join(' ');
+}
+
+async function callHuggingFaceAnalysis(question: string, trades: JournalTrade[], market: 'india' | 'us'): Promise<string> {
+  const prompt = buildAiPrompt(question, trades, market);
+  const model = process.env.HF_MODEL || 'google/flan-t5-small';
+  const token = process.env.HF_API_TOKEN;
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const url = `https://api-inference.huggingface.co/models/${model}`;
+  const body = {
+    inputs: prompt,
+    parameters: { max_new_tokens: 256, temperature: 0.2, top_p: 0.9 },
+    options: { wait_for_model: true, use_cache: false },
+  };
+  const result = await postJson<unknown>(url, body, headers);
+  if (typeof result === 'string') return result;
+  const resultData = result as any;
+  if (Array.isArray(resultData) && resultData.length > 0 && typeof resultData[0] === 'object' && resultData[0] !== null && 'generated_text' in resultData[0]) {
+    return resultData[0].generated_text;
+  }
+  if (typeof resultData === 'object' && resultData !== null && 'generated_text' in resultData) {
+    return resultData.generated_text;
+  }
+  if (typeof resultData === 'object' && resultData !== null && 'error' in resultData) {
+    throw new Error(resultData.error);
+  }
+  return JSON.stringify(result);
 }
 
 function parseDate(dateString: string): Date {
@@ -263,6 +406,26 @@ router.put('/trades/:id/exits', async (req: Request, res: Response) => {
   const { portfolio_size } = await getSettings();
   await logActivity({ timestamp: new Date().toISOString(), action: 'EXIT_UPDATED', market: 'India', trade_id: id, stock: trade.stock, details: `${exits.length} exit record${exits.length !== 1 ? 's' : ''} updated` });
   res.json(enrichTrade(updated, portfolio_size));
+});
+
+router.post('/ai/analysis', async (req: Request, res: Response) => {
+  const market = req.body.market === 'us' ? 'us' : 'india';
+  const question = String(req.body.question || 'Summarize the journal and highlight anything important.');
+  const trades = Array.isArray(req.body.trades) ? req.body.trades as JournalTrade[] : [];
+  const settings = await getSettings();
+  const payloadTrades = trades.length > 0 ? trades : market === 'us'
+    ? enrichAll(await getAllUsTrades(), settings.us_portfolio_size)
+    : enrichAll(await getAllTrades(), settings.portfolio_size);
+
+  try {
+    const aiText = await callHuggingFaceAnalysis(question, payloadTrades, market);
+    res.json({ answer: aiText, source: 'hf' as const });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const fallbackText = buildRuleBasedAiResponse(question, payloadTrades, market);
+    console.error('AI analysis fallback:', errMsg);
+    res.json({ answer: fallbackText, source: 'fallback' as const, error: errMsg });
+  }
 });
 
 // ── US trades ─────────────────────────────────────────────────────────────────
