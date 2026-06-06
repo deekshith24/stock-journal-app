@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Trade, Settings, StockPrice } from '../types';
 
@@ -169,6 +169,13 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const messageContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const apiUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
   const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
@@ -268,7 +275,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
         ))}
       </div>
 
-      <div style={{ maxHeight: 320, overflowY: 'auto', padding: 10, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f8fafc' }}>
+      <div ref={messageContainerRef} style={{ maxHeight: 320, overflowY: 'auto', padding: 10, border: '1px solid #e5e7eb', borderRadius: 10, background: '#f8fafc' }}>
         {messages.map((message, index) => (
           <div key={`${message.role}-${index}`} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

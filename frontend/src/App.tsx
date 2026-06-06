@@ -859,9 +859,9 @@ export default function App() {
           <button
             className="assistant-toggle"
             onClick={() => setAssistantOpen(prev => !prev)}
-            aria-label={assistantOpen ? 'Minimize assistant' : 'Open assistant'}
+            aria-label={assistantOpen ? 'Minimize assistant chat' : 'Open assistant chat'}
           >
-            {assistantOpen ? '−' : 'AI'}
+            {assistantOpen ? '−' : 'Chat'}
           </button>
         </div>
       )}
