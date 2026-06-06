@@ -218,8 +218,9 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       setMessages(prev => [...prev, { role: 'assistant', text: fallback, source: 'fallback' }]);
       console.error('AI assistant fetch error:', err);
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes('Failed to fetch')) {
-        setError(`Failed to reach AI backend at ${endpoint}. Check VITE_API_URL and backend availability.`);
+      const normalized = message.toLowerCase();
+      if (normalized.includes('fetch') || normalized.includes('network')) {
+        setError(`Cannot reach AI backend at ${endpoint}. Check VITE_API_URL and backend availability.`);
       } else {
         setError(message);
       }
