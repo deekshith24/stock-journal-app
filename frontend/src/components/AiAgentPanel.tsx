@@ -176,15 +176,19 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     setMessages(prev => [...prev, { role: 'user', text: question }]);
     setLoading(true);
 
-    const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+    const apiUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
+    const apiBase = `${apiUrl.replace(/\/+$/, '')}/api`;
     const session = await supabase.auth.getSession();
     const accessToken = session.data.session?.access_token;
     if (!accessToken) {
       throw new Error('Not authenticated. Please sign in again.');
     }
 
+    const endpoint = `${apiBase}/ai/analysis`;
+    console.log('AI assistant request URL:', endpoint);
+
     try {
-      const response = await fetch(`${apiBase}/ai/analysis`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,8 +198,9 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
       });
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || response.statusText);
+        const body = await response.text();
+        const message = body ? `${response.status} ${response.statusText}: ${body}` : `${response.status} ${response.statusText}`;
+        throw new Error(message);
       }
 
       const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; ai_connected: boolean; error?: string; hf_token_present?: boolean; model?: string };
@@ -207,6 +212,7 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     } catch (err: unknown) {
       const fallback = generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: fallback, source: 'fallback' }]);
+      console.error('AI assistant fetch error:', err);
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
