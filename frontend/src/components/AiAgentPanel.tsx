@@ -175,18 +175,21 @@ export default function AiAgentPanel({ trades, stockPrices, currency, locale, ma
     setMessages(prev => [...prev, { role: 'user', text: question }]);
     setLoading(true);
 
+    const apiBase = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+
     try {
-      const response = await fetch('/api/ai/analysis', {
+      const response = await fetch(`${apiBase}/ai/analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ market, question, trades }),
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        const text = await response.text();
+        throw new Error(text || response.statusText);
       }
 
-      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; ai_connected: boolean; error?: string };
+      const data = await response.json() as { answer: string; source: 'hf' | 'fallback'; ai_connected: boolean; error?: string; hf_token_present?: boolean; model?: string };
       const assistantText = data.answer || generateResponse(question, analysis, currency, locale);
       setMessages(prev => [...prev, { role: 'assistant', text: assistantText, source: data.source }]);
       if (!data.ai_connected) {
