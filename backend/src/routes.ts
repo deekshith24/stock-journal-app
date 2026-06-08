@@ -564,20 +564,58 @@ interface YahooChartResponse {
     error?: { description: string };
   };
 }
+interface PriceCacheEntry {
+  value: { currentPrice: number; previousClose: number; dayHigh: number; dayLow: number; timestamp: number };
+  expires: number;
+}
+
+const priceCache = new Map<string, PriceCacheEntry>();
+const pendingFetches = new Map<string, Promise<PriceCacheEntry>>();
+const CACHE_TTL_SEC = parseInt(process.env.YF_CACHE_TTL || '60', 10);
 
 async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; previousClose: number; dayHigh: number; dayLow: number; timestamp: number }> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-  const data = await fetchJson<YahooChartResponse>(url);
-  const meta = data?.chart?.result?.[0]?.meta;
-  if (!meta?.regularMarketPrice) throw new Error(`No price data for ${ticker}`);
-  const p = meta.regularMarketPrice;
-  return {
-    currentPrice:  Math.round(p * 100) / 100,
-    previousClose: Math.round((meta.chartPreviousClose ?? p) * 100) / 100,
-    dayHigh:       Math.round((meta.regularMarketDayHigh ?? p) * 100) / 100,
-    dayLow:        Math.round((meta.regularMarketDayLow  ?? p) * 100) / 100,
-    timestamp:     meta.regularMarketTime ?? Math.floor(Date.now() / 1000),
-  };
+  const now = Date.now();
+  const key = ticker.toUpperCase();
+
+  // Return cached value if still valid
+  const cached = priceCache.get(key);
+  if (cached && cached.expires > now) return cached.value;
+
+  // If there's already an in-flight fetch for this ticker, await it
+  const pending = pendingFetches.get(key);
+  if (pending) {
+    const result = await pending;
+    return result.value;
+  }
+
+  // Start a new fetch and store the promise to dedupe concurrent calls
+  const p = (async () => {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+      const data = await fetchJson<YahooChartResponse>(url);
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta?.regularMarketPrice) throw new Error(`No price data for ${ticker}`);
+      const pval = meta.regularMarketPrice;
+      const value = {
+        currentPrice:  Math.round(pval * 100) / 100,
+        previousClose: Math.round((meta.chartPreviousClose ?? pval) * 100) / 100,
+        dayHigh:       Math.round((meta.regularMarketDayHigh ?? pval) * 100) / 100,
+        dayLow:        Math.round((meta.regularMarketDayLow  ?? pval) * 100) / 100,
+        timestamp:     meta.regularMarketTime ?? Math.floor(Date.now() / 1000),
+      };
+
+      const entry: PriceCacheEntry = { value, expires: Date.now() + CACHE_TTL_SEC * 1000 };
+      priceCache.set(key, entry);
+      return entry;
+    } finally {
+      // remove pending promise regardless of success/failure
+      pendingFetches.delete(key);
+    }
+  })();
+
+  pendingFetches.set(key, p);
+  const entry = await p;
+  return entry.value;
 }
 
 router.get('/stock-price/:symbol/:exchange', async (req: Request, res: Response) => {
