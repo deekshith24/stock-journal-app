@@ -126,12 +126,53 @@ function calcDaysInTrade(entryDate: string, exitDate: string | null): string {
 }
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`${response.status} ${response.statusText}${body ? `: ${body}` : ''}`);
+  const maxAttempts = 4;
+  const baseDelayMs = 500; // base for exponential backoff
+
+  const headers = {
+    'User-Agent': 'stock-journal-app/1.0',
+    ...((options && (options as any).headers) || {}),
+  };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await fetch(url, { ...(options || {}), headers });
+      if (resp.ok) {
+        return resp.json() as Promise<T>;
+      }
+
+      // Handle rate limiting: honor Retry-After header if present
+      if (resp.status === 429) {
+        const ra = resp.headers.get('retry-after');
+        const waitSec = ra ? Number(ra) : Math.pow(2, attempt);
+        const waitMs = Math.max(0, Math.floor(waitSec)) * 1000;
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, waitMs || baseDelayMs));
+          continue;
+        }
+      }
+
+      // Retry on 5xx server errors with exponential backoff
+      if (resp.status >= 500 && resp.status < 600 && attempt < maxAttempts) {
+        const waitMs = baseDelayMs * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+
+      const body = await resp.text();
+      throw new Error(`${resp.status} ${resp.statusText}${body ? `: ${body}` : ''}`);
+    } catch (err) {
+      // Network or other errors: retry a few times
+      if (attempt < maxAttempts) {
+        const waitMs = baseDelayMs * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      throw err;
+    }
   }
-  return response.json() as Promise<T>;
+
+  throw new Error('Failed to fetch JSON after retries');
 }
 
 function enrichTrade(trade: Trade, portfolioSize: number) {
