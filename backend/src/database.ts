@@ -1,10 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 import { Trade } from './types';
+import fs from 'fs';
+import path from 'path';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+let supabase: any = null;
+const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+if (hasSupabase) {
+  supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+} else {
+  console.warn('SUPABASE env vars missing — falling back to local JSON data files');
+}
+
+const dataDir = path.resolve(process.cwd(), 'data');
+
+function readJson(fileName: string) {
+  try {
+    const p = path.join(dataDir, fileName);
+    if (!fs.existsSync(p)) return null;
+    const raw = fs.readFileSync(p, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeJson(fileName: string, data: any) {
+  const p = path.join(dataDir, fileName);
+  fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf8');
+}
 
 export interface ActivityEntry {
   id: number;

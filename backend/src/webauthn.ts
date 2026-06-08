@@ -6,9 +6,101 @@ import {
   verifyAuthenticationResponse,
 } from '@simplewebauthn/server';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
 const router = Router();
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+
+const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+let supabase: any = null;
+if (hasSupabase) {
+  supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+} else {
+  console.warn('SUPABASE env vars missing — webauthn will use local JSON fallback');
+
+  const dataDir = path.resolve(process.cwd(), 'data');
+  const filePath = path.join(dataDir, 'webauthn_credentials.json');
+
+  function readAll() {
+    try {
+      if (!fs.existsSync(filePath)) return [];
+      const raw = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(raw);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeAll(arr: any[]) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(arr, null, 2), 'utf8');
+  }
+
+  class LocalQuery {
+    table: string;
+    _op: 'select' | 'delete' | 'update' | null = null;
+    _cols: string | null = null;
+    _filters: Array<[string, any]> = [];
+    _limit: number | null = null;
+    _updateObj: any = null;
+
+    constructor(table: string) { this.table = table; }
+
+    select(cols?: string) { this._op = 'select'; this._cols = cols || null; return this; }
+    eq(field: string, val: any) { this._filters.push([field, val]); return this; }
+    limit(n: number) { this._limit = n; return this; }
+    delete() { this._op = 'delete'; return this; }
+    insert(obj: any) {
+      const arr = readAll();
+      const rec = { ...obj };
+      if (rec.id == null) rec.id = Math.max(0, ...arr.map((r: any) => r.id || 0)) + 1;
+      arr.push(rec);
+      writeAll(arr);
+      return Promise.resolve({ data: [rec], error: null });
+    }
+    update(obj: any) {
+      this._op = 'update'; this._updateObj = obj; return this;
+    }
+
+    then(resolve: any, _reject: any) {
+      const arr = readAll();
+      const matched = arr.filter((r: any) => this._filters.every(([f, v]) => r[f] === v));
+
+      if (this._op === 'select') {
+        const data = this._limit != null ? matched.slice(0, this._limit) : matched;
+        return resolve({ data, error: null });
+      }
+
+      if (this._op === 'delete') {
+        const remaining = arr.filter((r: any) => !this._filters.every(([f, v]) => r[f] === v));
+        writeAll(remaining);
+        return resolve({ data: [], error: null });
+      }
+
+      if (this._op === 'update') {
+        let updated: any[] = [];
+        const out = arr.map((r: any) => {
+          if (this._filters.every(([f, v]) => r[f] === v)) {
+            const u = { ...r, ...this._updateObj };
+            updated.push(u);
+            return u;
+          }
+          return r;
+        });
+        writeAll(out);
+        return resolve({ data: updated, error: null });
+      }
+
+      return resolve({ data: [], error: null });
+    }
+  }
+
+  supabase = {
+    from(table: string) {
+      return new LocalQuery(table);
+    }
+  };
+}
 
 const RP_NAME = 'Stock Journal';
 const RP_ID   = process.env.WEBAUTHN_RP_ID || 'localhost';
