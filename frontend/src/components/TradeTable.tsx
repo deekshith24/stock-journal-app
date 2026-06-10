@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Trade, StockPrice } from '../types';
+import { marketModeFromTrades } from '../utils/marketMode';
 
 interface Props {
   trades: Trade[];
@@ -57,24 +58,6 @@ function plClass(pl: number | undefined | null): string {
 type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
-
-function getRecentWinRate(trades: Trade[], n = 8): { winRate: number; count: number } | null {
-  const recent = [...trades]
-    .filter(t => t.status === 'Closed' && t.pl != null)
-    .sort((a, b) => (b.exit_date ?? b.entry_date).localeCompare(a.exit_date ?? a.entry_date))
-    .slice(0, n);
-  if (recent.length < 4) return null;
-  const wins = recent.filter(t => (t.pl ?? 0) > 0).length;
-  return { winRate: (wins / recent.length) * 100, count: recent.length };
-}
-
-function marketModeFromTrades(trades: Trade[]): 'choppy' | 'bull' | 'neutral' {
-  const recent = getRecentWinRate(trades);
-  if (!recent) return 'neutral';
-  if (recent.winRate < 35) return 'choppy';
-  if (recent.winRate >= 60) return 'bull';
-  return 'neutral';
-}
 
 function parseDays(d: string | undefined): number {
   if (!d) return 0;
@@ -250,6 +233,9 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
               </div>
             );
           })()}
+          {t.stop_loss == null && isOpenOrPartial && (
+            <div style={{ fontSize: 10, marginTop: 1, color: '#dc2626', fontWeight: 600 }}>⚠ No SL</div>
+          )}
         </td>
         <td className="text-right"><span className="mask-price">{fmt(invested, 0, locale)}</span></td>
         <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>

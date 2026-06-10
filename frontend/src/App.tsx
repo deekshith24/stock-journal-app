@@ -3,6 +3,7 @@ import { Trade, Settings, ExitRecord, StockPrice, ActivityEntry } from './types'
 import { api } from './api';
 import { supabase } from './supabaseClient';
 import { exportToExcel } from './utils/exportExcel';
+import { marketModeFromTrades } from './utils/marketMode';
 import TradeTable from './components/TradeTable';
 import TradeForm from './components/TradeForm';
 import SummaryCards from './components/SummaryCards';
@@ -85,7 +86,16 @@ function topTextSuggestions(values: Array<string | undefined | null>, maxItems =
 interface CachedPrice { price: StockPrice; fetchedAt: string; }
 
 function loadStockPriceCache(): Record<string, CachedPrice> {
-  try { return JSON.parse(window.localStorage.getItem(STOCK_PRICE_CACHE_KEY) || '{}'); } catch { return {}; }
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(STOCK_PRICE_CACHE_KEY) || '{}');
+    // Drop any entries with invalid prices
+    return Object.fromEntries(
+      Object.entries(raw).filter(([, v]) => {
+        const p = (v as CachedPrice)?.price?.currentPrice;
+        return typeof p === 'number' && isFinite(p) && p > 0;
+      })
+    ) as Record<string, CachedPrice>;
+  } catch { return {}; }
 }
 
 function saveStockPriceCache(cache: Record<string, CachedPrice>) {
@@ -304,7 +314,8 @@ export default function App() {
       const stockPriceResults = await Promise.all(stockPricePromises);
       const newStockPrices = Object.fromEntries(stockPriceResults.filter((entry): entry is readonly [string, StockPrice] => entry !== null));
       saveStockPriceCache(priceCache);
-      setStockPrices(newStockPrices);
+      // Merge into existing prices so failed fetches don't blank out current P/L values
+      setStockPrices(prev => ({ ...prev, ...newStockPrices }));
       const fetchTimes = Object.values(priceCache).map(e => new Date(e.fetchedAt).getTime());
       if (fetchTimes.length) setLastPriceFetchedAt(new Date(Math.max(...fetchTimes)));
     } catch (e) {
@@ -617,6 +628,7 @@ export default function App() {
               exchange={isUS ? 'US' : 'IN'}
               portfolioSize={portfolioSize}
               title="Overall"
+              marketMode={marketModeFromTrades(allDateFilteredTrades)}
             />
 
             {/* Individual compact summary for active tab */}
@@ -628,6 +640,7 @@ export default function App() {
               stockPrices={stockPrices}
               exchange={isUS ? 'US' : 'IN'}
               title={tradeTypeTab === 'swing' ? 'Swing Trade' : 'Positional Trade'}
+              marketMode={marketModeFromTrades(dateFilteredTrades)}
               compact
             />
 

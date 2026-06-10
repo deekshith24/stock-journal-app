@@ -90,6 +90,10 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!trade && (form.stop_loss == null || form.stop_loss <= 0)) {
+      alert('Stop Loss is required for new positions.');
+      return;
+    }
     setSaving(true);
     try {
       await onSave({ ...form, stock: form.stock.toUpperCase().trim() }, exits ?? undefined);
@@ -137,21 +141,23 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                     placeholder="Price per share" />
                 </div>
                 <div className="form-group">
-                  <label>Stop Loss ({sym})</label>
+                  <label>Stop Loss ({sym}) {!trade && <span style={{ color: '#dc2626' }}>*</span>}</label>
                   <input type="number" min="0" step="0.0001"
                     value={form.stop_loss ?? ''}
                     onChange={e => set('stop_loss', e.target.value ? parseFloat(e.target.value) : null)}
                     placeholder="SL price"
                     style={form.stop_loss != null && form.entry_price > 0
                       ? { borderColor: form.stop_loss >= form.entry_price ? '#16a34a' : '#f59e0b', background: form.stop_loss >= form.entry_price ? '#f0fdf4' : '#fffbeb' }
-                      : {}} />
-                  {form.stop_loss != null && form.entry_price > 0 && (
+                      : !trade && form.entry_price > 0 ? { borderColor: '#dc2626' } : {}} />
+                  {form.stop_loss != null && form.entry_price > 0 ? (
                     <div style={{ fontSize: 11, marginTop: 3, color: form.stop_loss >= form.entry_price ? '#16a34a' : '#92400e' }}>
                       {form.stop_loss >= form.entry_price
                         ? `Protected — SL ${((form.stop_loss - form.entry_price) / form.entry_price * 100).toFixed(1)}% above entry`
                         : `Risk: ${((form.entry_price - form.stop_loss) / form.entry_price * 100).toFixed(1)}% per share`}
                     </div>
-                  )}
+                  ) : !trade ? (
+                    <div style={{ fontSize: 11, marginTop: 3, color: '#dc2626' }}>Required for new positions</div>
+                  ) : null}
                 </div>
                 <div className="form-group">
                   <label>Invested ({sym})</label>

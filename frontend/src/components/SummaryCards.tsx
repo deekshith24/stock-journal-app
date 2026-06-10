@@ -10,6 +10,7 @@ interface Props {
   portfolioSize?: number;
   title?: string;
   compact?: boolean;
+  marketMode?: 'choppy' | 'bull' | 'neutral';
 }
 
 function fmt(n: number, decimals = 0, locale = 'en-IN'): string {
@@ -87,22 +88,30 @@ function calcMetrics(
   }, 0);
   const protectedCount = open.filter(t => t.stop_loss != null && t.stop_loss >= t.entry_price).length;
   const atRiskCount    = open.filter(t => t.stop_loss != null && t.stop_loss < t.entry_price).length;
+  const noSlCount      = open.filter(t => t.stop_loss == null).length;
 
-  return { closed, realized, open, totalPL, totalPLPct, winRate, avgWin, avgLoss, openInvested, unrealizedPL, winners, losers, openRisk, protectedCount, atRiskCount };
+  return { closed, realized, open, totalPL, totalPLPct, winRate, avgWin, avgLoss, openInvested, unrealizedPL, winners, losers, openRisk, protectedCount, atRiskCount, noSlCount };
 }
 
-export default function SummaryCards({ trades, currency, exchangeRate, dateRates, stockPrices, exchange, portfolioSize, title, compact }: Props) {
+export default function SummaryCards({ trades, currency, exchangeRate, dateRates, stockPrices, exchange, portfolioSize, title, compact, marketMode = 'neutral' }: Props) {
   const sym    = currency === 'INR' ? '₹' : '$';
   const locale = currency === 'INR' ? 'en-IN' : 'en-US';
   const rate   = currency === 'INR' ? exchangeRate ?? 1 : 1;
 
-  const { closed, realized, open, totalPL, totalPLPct, winRate, avgWin, avgLoss, openInvested, unrealizedPL, winners, losers, openRisk, protectedCount, atRiskCount } =
+  const { closed, realized, open, totalPL, totalPLPct, winRate, avgWin, avgLoss, openInvested, unrealizedPL, winners, losers, openRisk, protectedCount, atRiskCount, noSlCount } =
     calcMetrics(trades, currency, exchange, rate, dateRates, stockPrices);
 
   const deployedPct  = portfolioSize && portfolioSize > 0 ? (openInvested / portfolioSize) * 100 : null;
   const openRiskPct  = portfolioSize && portfolioSize > 0 ? (openRisk / portfolioSize) * 100 : null;
   const barColor     = deployedPct == null ? '#16a34a' : deployedPct > 90 ? '#dc2626' : deployedPct > 70 ? '#f59e0b' : '#16a34a';
-  const riskBarColor = openRiskPct == null ? '#16a34a' : openRiskPct > 3 ? '#dc2626' : openRiskPct > 1 ? '#f59e0b' : '#16a34a';
+
+  // Red threshold depends on market regime: choppy=1%, neutral=2%, bull=3%
+  const riskRedThreshold    = marketMode === 'choppy' ? 1 : marketMode === 'bull' ? 3 : 2;
+  const riskYellowThreshold = riskRedThreshold / 2;
+  const riskBarColor = openRiskPct == null ? '#16a34a'
+    : openRiskPct >= riskRedThreshold    ? '#dc2626'
+    : openRiskPct >= riskYellowThreshold ? '#f59e0b'
+    : '#16a34a';
 
   const allCards = [
     { label: 'Total Trades',      value: fmt(trades.length, 0, locale),                                                                       color: 'neutral', mask: false },
@@ -155,7 +164,7 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
         </div>
       )}
 
-      {openRiskPct !== null && !compact && (atRiskCount > 0 || protectedCount > 0) && (
+      {openRiskPct !== null && !compact && open.length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -174,12 +183,15 @@ export default function SummaryCards({ trades, currency, exchangeRate, dateRates
               transition: 'width 0.4s ease',
             }} />
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', gap: 12 }}>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {openRisk > 0
               ? <span><span className="mask-price">{sym}{fmt(openRisk, 0, locale)}</span> at risk if SL hit ({atRiskCount} position{atRiskCount !== 1 ? 's' : ''})</span>
-              : <span>No capital at risk</span>}
+              : atRiskCount === 0 && noSlCount === 0 ? <span style={{ color: '#16a34a' }}>No capital at risk</span> : null}
             {protectedCount > 0 && (
-              <span style={{ color: '#16a34a' }}>✓ {protectedCount} protected (SL in profit)</span>
+              <span style={{ color: '#16a34a' }}>✓ {protectedCount} protected</span>
+            )}
+            {noSlCount > 0 && (
+              <span style={{ color: '#dc2626' }}>⚠ {noSlCount} position{noSlCount !== 1 ? 's' : ''} without SL</span>
             )}
           </div>
         </div>
