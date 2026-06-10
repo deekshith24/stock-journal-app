@@ -582,8 +582,8 @@ interface YahooCrumbSession {
 let yahooCrumbSession: YahooCrumbSession | null = null;
 let crumbFetchPromise: Promise<YahooCrumbSession> | null = null;
 let crumbBackoffUntil = 0; // epoch ms — don't retry before this
-const CRUMB_TTL_MS = 50 * 60 * 1000; // 50 minutes
-const CRUMB_BACKOFF_MS = 30_000;      // wait 30s after a failed crumb fetch
+const CRUMB_TTL_MS = 50 * 60 * 1000;  // 50 minutes
+const CRUMB_BACKOFF_MS = 5 * 60 * 1000; // 5 min backoff after crumb failure
 
 const YAHOO_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -648,20 +648,43 @@ async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; 
   const now = Date.now();
   const key = ticker.toUpperCase();
 
-  // Return cached value if still valid
   const cached = priceCache.get(key);
   if (cached && cached.expires > now) return cached.value;
 
-  // If there's already an in-flight fetch for this ticker, await it
   const pending = pendingFetches.get(key);
-  if (pending) {
-    const result = await pending;
-    return result.value;
-  }
+  if (pending) return (await pending).value;
 
-  // Start a new fetch and store the promise to dedupe concurrent calls
   const p = (async () => {
     try {
+      const parseResponse = (data: YahooChartResponse) => {
+        const meta = data?.chart?.result?.[0]?.meta;
+        const pval = meta?.regularMarketPrice;
+        if (!pval || !isFinite(pval) || pval <= 0) throw new Error(`No valid price data for ${ticker}`);
+        const priceTime = meta.regularMarketTime;
+        if (priceTime && Date.now() - priceTime * 1000 > 7 * 24 * 60 * 60 * 1000)
+          throw new Error(`Stale price data for ${ticker}`);
+        return {
+          currentPrice:  Math.round(pval * 100) / 100,
+          previousClose: Math.round((meta.chartPreviousClose ?? pval) * 100) / 100,
+          dayHigh:       Math.round((meta.regularMarketDayHigh ?? pval) * 100) / 100,
+          dayLow:        Math.round((meta.regularMarketDayLow  ?? pval) * 100) / 100,
+          timestamp:     priceTime ?? Math.floor(Date.now() / 1000),
+        };
+      };
+
+      // Attempt 1: direct call without crumb — works on many IPs, avoids crumb rate-limits
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+        const data = await fetchJson<YahooChartResponse>(url, { headers: YAHOO_HEADERS });
+        const value = parseResponse(data);
+        priceCache.set(key, { value, expires: Date.now() + CACHE_TTL_SEC * 1000 });
+        return { value, expires: Date.now() + CACHE_TTL_SEC * 1000 } as PriceCacheEntry;
+      } catch (directErr: any) {
+        // Only fall through to crumb on auth errors, not on network/parse errors
+        if (!directErr?.message?.match(/^(401|403|429)/)) throw directErr;
+      }
+
+      // Attempt 2: crumb-authenticated call
       let session = await getYahooCrumb();
       const buildUrl = (s: YahooCrumbSession) =>
         `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d&crumb=${encodeURIComponent(s.crumb)}`;
@@ -671,8 +694,7 @@ async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; 
           headers: { ...YAHOO_HEADERS, 'Cookie': session.cookie },
         });
       } catch (err: any) {
-        // Crumb expired — force refresh and retry once
-        if (err?.message?.startsWith('401') || err?.message?.startsWith('403') || err?.message?.startsWith('404')) {
+        if (err?.message?.startsWith('401') || err?.message?.startsWith('403')) {
           yahooCrumbSession = null;
           session = await getYahooCrumb();
           data = await fetchJson<YahooChartResponse>(buildUrl(session), {
@@ -682,37 +704,17 @@ async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; 
           throw err;
         }
       }
-      const meta = data?.chart?.result?.[0]?.meta;
-      const pval = meta?.regularMarketPrice;
-      if (!pval || !isFinite(pval) || pval <= 0) throw new Error(`No valid price data for ${ticker}`);
-
-      // Reject data that is more than 7 days old — indicates Yahoo returned bad/stale data
-      const priceTime = meta.regularMarketTime;
-      if (priceTime) {
-        const ageMs = Date.now() - priceTime * 1000;
-        if (ageMs > 7 * 24 * 60 * 60 * 1000) throw new Error(`Stale price data for ${ticker} (age: ${Math.round(ageMs / 86400000)}d)`);
-      }
-
-      const value = {
-        currentPrice:  Math.round(pval * 100) / 100,
-        previousClose: Math.round((meta.chartPreviousClose ?? pval) * 100) / 100,
-        dayHigh:       Math.round((meta.regularMarketDayHigh ?? pval) * 100) / 100,
-        dayLow:        Math.round((meta.regularMarketDayLow  ?? pval) * 100) / 100,
-        timestamp:     priceTime ?? Math.floor(Date.now() / 1000),
-      };
-
+      const value = parseResponse(data);
       const entry: PriceCacheEntry = { value, expires: Date.now() + CACHE_TTL_SEC * 1000 };
       priceCache.set(key, entry);
       return entry;
     } finally {
-      // remove pending promise regardless of success/failure
       pendingFetches.delete(key);
     }
   })();
 
   pendingFetches.set(key, p);
-  const entry = await p;
-  return entry.value;
+  return (await p).value;
 }
 
 router.get('/stock-price/:symbol/:exchange', async (req: Request, res: Response) => {
