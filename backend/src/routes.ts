@@ -573,6 +573,59 @@ const priceCache = new Map<string, PriceCacheEntry>();
 const pendingFetches = new Map<string, Promise<PriceCacheEntry>>();
 const CACHE_TTL_SEC = parseInt(process.env.YF_CACHE_TTL || '60', 10);
 
+// Yahoo Finance crumb/cookie session — refreshed when stale or on 401/404
+interface YahooCrumbSession {
+  crumb: string;
+  cookie: string;
+  expires: number;
+}
+let yahooCrumbSession: YahooCrumbSession | null = null;
+let crumbFetchPromise: Promise<YahooCrumbSession> | null = null;
+const CRUMB_TTL_MS = 50 * 60 * 1000; // 50 minutes
+
+const YAHOO_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Origin': 'https://finance.yahoo.com',
+  'Referer': 'https://finance.yahoo.com/',
+};
+
+async function getYahooCrumb(): Promise<YahooCrumbSession> {
+  const now = Date.now();
+  if (yahooCrumbSession && yahooCrumbSession.expires > now) return yahooCrumbSession;
+  if (crumbFetchPromise) return crumbFetchPromise;
+
+  crumbFetchPromise = (async () => {
+    try {
+      // Step 1: hit the consent/main page to get cookies
+      const consentResp = await fetch('https://finance.yahoo.com/', {
+        headers: YAHOO_HEADERS,
+        redirect: 'follow',
+      });
+      const rawCookies = consentResp.headers.getSetCookie?.() ?? [];
+      const cookieStr = rawCookies.map((c: string) => c.split(';')[0]).join('; ');
+
+      // Step 2: fetch the crumb
+      const crumbResp = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+        headers: { ...YAHOO_HEADERS, 'Cookie': cookieStr },
+      });
+      if (!crumbResp.ok) throw new Error(`Crumb fetch failed: ${crumbResp.status}`);
+      const crumb = (await crumbResp.text()).trim();
+      if (!crumb || crumb.includes('<')) throw new Error('Invalid crumb response');
+
+      const session: YahooCrumbSession = { crumb, cookie: cookieStr, expires: Date.now() + CRUMB_TTL_MS };
+      yahooCrumbSession = session;
+      return session;
+    } finally {
+      crumbFetchPromise = null;
+    }
+  })();
+
+  return crumbFetchPromise;
+}
+
 async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; previousClose: number; dayHigh: number; dayLow: number; timestamp: number }> {
   const now = Date.now();
   const key = ticker.toUpperCase();
@@ -591,8 +644,26 @@ async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; 
   // Start a new fetch and store the promise to dedupe concurrent calls
   const p = (async () => {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-      const data = await fetchJson<YahooChartResponse>(url);
+      let session = await getYahooCrumb();
+      const buildUrl = (s: YahooCrumbSession) =>
+        `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d&crumb=${encodeURIComponent(s.crumb)}`;
+      let data: YahooChartResponse;
+      try {
+        data = await fetchJson<YahooChartResponse>(buildUrl(session), {
+          headers: { ...YAHOO_HEADERS, 'Cookie': session.cookie },
+        });
+      } catch (err: any) {
+        // Crumb expired — force refresh and retry once
+        if (err?.message?.startsWith('401') || err?.message?.startsWith('403') || err?.message?.startsWith('404')) {
+          yahooCrumbSession = null;
+          session = await getYahooCrumb();
+          data = await fetchJson<YahooChartResponse>(buildUrl(session), {
+            headers: { ...YAHOO_HEADERS, 'Cookie': session.cookie },
+          });
+        } else {
+          throw err;
+        }
+      }
       const meta = data?.chart?.result?.[0]?.meta;
       if (!meta?.regularMarketPrice) throw new Error(`No price data for ${ticker}`);
       const pval = meta.regularMarketPrice;
