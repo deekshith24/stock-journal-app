@@ -1,60 +1,178 @@
-import https from 'https';
 import { Router, Request, Response } from 'express';
 import {
   getAllTrades, getTradeById, createTrade, updateTrade, deleteTrade,
   getAllUsTrades, getUsTradeById, createUsTrade, updateUsTrade, deleteUsTrade,
-  getSettings, saveSettings,
+  getSettings, saveSettings, logActivity, getActivityLog,
 } from './database';
 import { Trade, ExitRecord } from './types';
 
+type JournalTrade = Trade & {
+  status?: 'Open' | 'Partial' | 'Closed';
+  pl?: number;
+  pl_percentage?: number;
+  pf_percentage?: number;
+  days_in_trade?: string;
+  reason_for_entry?: string;
+};
+
 const router = Router();
 
-// Cache Yahoo prices for 5 minutes to avoid 429 rate-limiting
-const priceCache = new Map<string, { data: YahooPriceResult; expiresAt: number }>();
-const CACHE_TTL_MS = 5 * 60 * 1000;
+function summarizeTradesForRules(trades: JournalTrade[], market: 'india' | 'us') {
+  const openPartial = trades.filter(t => t.status === 'Open' || t.status === 'Partial');
+  const closed = trades.filter(t => t.status === 'Closed');
+  const totalPL = closed.reduce((sum, t) => sum + (t.pl ?? 0), 0);
+  const winRate = closed.length > 0 ? (closed.filter(t => (t.pl ?? 0) > 0).length / closed.length) * 100 : null;
+  const stalledTrades = openPartial.filter(t => {
+    const days = parseInt(t.days_in_trade ?? '0');
+    if (days <= 10) return false;
+    const pct = t.pl_percentage ?? 0;
+    return pct <= 1;
+  }).map(t => `${t.stock} (${t.days_in_trade})`);
 
-// In-flight request coalescing — multiple callers for the same ticker share one HTTP request
-const inFlight = new Map<string, Promise<YahooPriceResult>>();
+  const partialCandidates = openPartial.filter(t => {
+    const pct = t.pl_percentage ?? 0;
+    if (winRate == null) return pct >= 12;
+    if (winRate < 35) return pct >= 10;
+    if (winRate >= 60) return pct >= 15;
+    return pct >= 12;
+  }).map(t => `${t.stock} ${((t.pl_percentage ?? 0)).toFixed(1)}%`);
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  const highExposure = openPartial.filter(t => (t.pf_percentage ?? 0) >= 5)
+    .sort((a, b) => (b.pf_percentage ?? 0) - (a.pf_percentage ?? 0))
+    .map(t => `${t.stock} ${((t.pf_percentage ?? 0)).toFixed(1)}%`);
+
+  return { openPartial, closed, totalPL, winRate, stalledTrades, partialCandidates, highExposure };
 }
 
-function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const opts = new URL(url);
-    const reqOptions = {
-      hostname: opts.hostname,
-      path: opts.pathname + opts.search,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; StockJournal/1.0)',
-        ...headers,
-      },
-    };
-    https.get(reqOptions, res => {
-      let body = '';
-      res.on('data', chunk => { body += chunk; });
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(body) as T;
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(parsed);
-          } else {
-            reject(new Error(`${res.statusCode} Too Many Requests: ${body}`));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }).on('error', reject);
-  });
+function buildRuleBasedAiResponse(question: string, trades: JournalTrade[], market: 'india' | 'us'): string {
+  const summary = summarizeTradesForRules(trades, market);
+  const lower = question.toLowerCase();
+  const answers: string[] = [];
+
+  if (lower.includes('market') || lower.includes('condition') || lower.includes('regime')) {
+    const condition = summary.winRate == null ? 'neutral' : summary.winRate >= 60 ? 'bull' : summary.winRate < 35 ? 'choppy' : 'neutral';
+    answers.push(`Market condition appears ${condition}.`);
+    if (summary.winRate != null) answers.push(`Your win rate on closed trades is ${summary.winRate.toFixed(1)}%.`);
+    if (condition === 'choppy') answers.push('Reduce size, avoid new entries, and watch for sideways behavior.');
+    if (condition === 'bull') answers.push('Consider partial-booking winners while keeping stops in place.');
+    return answers.join(' ');
+  }
+
+  if (lower.includes('stalled') || lower.includes('slow') || lower.includes('time')) {
+    if (summary.stalledTrades.length) {
+      answers.push(`Stalled trades: ${summary.stalledTrades.slice(0, 5).join(', ')}.`);
+      answers.push('These are held more than 10 trading days with little movement; review thesis or reduce exposure.');
+    } else {
+      answers.push('No stalled trades detected at the moment. Your open positions are moving or have not been held long enough.');
+    }
+    return answers.join(' ');
+  }
+
+  if (lower.includes('partial') || lower.includes('book 30') || lower.includes('book partial')) {
+    if (summary.partialCandidates.length) {
+      answers.push(`Partial-book candidates: ${summary.partialCandidates.slice(0, 5).join(', ')}.`);
+      answers.push('Consider trimming roughly 30% on these names to lock gains while keeping the rest exposed.');
+    } else {
+      answers.push('No current partial-book candidates found with the configured thresholds. Continue monitoring open positions.');
+    }
+    return answers.join(' ');
+  }
+
+  if (lower.includes('risk') || lower.includes('exposure') || lower.includes('danger')) {
+    if (summary.highExposure.length) {
+      answers.push(`High exposure trades: ${summary.highExposure.slice(0, 5).join(', ')}.`);
+      answers.push('Watch these positions closely and avoid adding more until direction is clear.');
+    } else {
+      answers.push('No large exposure trades detected right now. Risk appears reasonably distributed.');
+    }
+    return answers.join(' ');
+  }
+
+  answers.push(`There are ${trades.length} trades in this journal.`);
+  answers.push(`Open/partial: ${summary.openPartial.length}, closed: ${summary.closed.length}.`);
+  if (summary.winRate != null) answers.push(`Win rate on closed trades is ${summary.winRate.toFixed(1)}%.`);
+  if (summary.totalPL !== 0) answers.push(`Total closed P/L is ${summary.totalPL >= 0 ? '+' : ''}${summary.totalPL.toFixed(0)}.`);
+  answers.push('Ask me about market condition, stalled trades, partial-booking candidates, or risk exposure.');
+  return answers.join(' ');
+}
+
+function parseDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function countTradingDays(startDate: Date, endDate: Date): number {
+  if (endDate < startDate) return 0;
+
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current < endDate) {
+    current.setUTCDate(current.getUTCDate() + 1);
+    const day = current.getUTCDay();
+    if (day !== 0 && day !== 6) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 function calcDaysInTrade(entryDate: string, exitDate: string | null): string {
-  const entry = new Date(entryDate);
-  const exit = exitDate ? new Date(exitDate) : new Date();
-  const diff = Math.round((exit.getTime() - entry.getTime()) / (1000 * 60 * 60 * 24));
-  return `${Math.max(0, diff)}d`;
+  const entry = parseDate(entryDate);
+  const exit = exitDate ? parseDate(exitDate) : new Date();
+  const days = countTradingDays(entry, exit);
+  return `${Math.max(0, days)}d`;
+}
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const maxAttempts = 4;
+  const baseDelayMs = 500; // base for exponential backoff
+
+  const headers = {
+    'User-Agent': 'stock-journal-app/1.0',
+    ...((options && (options as any).headers) || {}),
+  };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await fetch(url, { ...(options || {}), headers });
+      if (resp.ok) {
+        return resp.json() as Promise<T>;
+      }
+
+      // Handle rate limiting: honor Retry-After header if present
+      if (resp.status === 429) {
+        const ra = resp.headers.get('retry-after');
+        const waitSec = ra ? Number(ra) : Math.pow(2, attempt);
+        const waitMs = Math.max(0, Math.floor(waitSec)) * 1000;
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, waitMs || baseDelayMs));
+          continue;
+        }
+      }
+
+      // Retry on 5xx server errors with exponential backoff
+      if (resp.status >= 500 && resp.status < 600 && attempt < maxAttempts) {
+        const waitMs = baseDelayMs * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+
+      const body = await resp.text();
+      throw new Error(`${resp.status} ${resp.statusText}${body ? `: ${body}` : ''}`);
+    } catch (err) {
+      // Network or other errors: retry a few times
+      if (attempt < maxAttempts) {
+        const waitMs = baseDelayMs * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error('Failed to fetch JSON after retries');
 }
 
 function enrichTrade(trade: Trade, portfolioSize: number) {
@@ -78,7 +196,6 @@ function enrichTrade(trade: Trade, portfolioSize: number) {
     }
     lastExitDate = trade.exits[trade.exits.length - 1].date;
   } else if (trade.exit_quantity != null && trade.exit_price != null) {
-    // Legacy scalar fallback
     totalExitQty = trade.exit_quantity;
     totalPL = (trade.exit_price - trade.entry_price) * trade.exit_quantity;
     totalProceeds = trade.exit_price * trade.exit_quantity;
@@ -100,7 +217,6 @@ function enrichTrade(trade: Trade, portfolioSize: number) {
     ...trade,
     exits: trade.exits ?? [],
     status,
-    // Scalar display fields derived from exits array so the table always shows correct totals
     exit_quantity: totalExitQty > 0 ? totalExitQty : null,
     exit_price: weightedExitPrice,
     exit_date: lastExitDate,
@@ -118,7 +234,6 @@ function enrichAll(trades: Trade[], portfolioSize: number) {
   return trades.map(t => enrichTrade(t, portfolioSize));
 }
 
-// Only updates entry fields; always preserves exits and legacy scalar exit fields
 function buildEntryPayload(body: Trade, existing: Trade) {
   return {
     stock: body.stock ? body.stock.toUpperCase().trim() : existing.stock,
@@ -126,8 +241,8 @@ function buildEntryPayload(body: Trade, existing: Trade) {
     entry_date: body.entry_date || existing.entry_date,
     entry_quantity: body.entry_quantity ? Number(body.entry_quantity) : existing.entry_quantity,
     entry_price: body.entry_price ? Number(body.entry_price) : existing.entry_price,
+    stop_loss: body.stop_loss !== undefined ? (body.stop_loss ? Number(body.stop_loss) : null) : (existing.stop_loss ?? null),
     reason_for_entry: body.reason_for_entry !== undefined ? body.reason_for_entry : existing.reason_for_entry,
-    // Always preserve exit data
     exit_date: existing.exit_date,
     exit_quantity: existing.exit_quantity,
     exit_price: existing.exit_price,
@@ -139,29 +254,30 @@ function buildEntryPayload(body: Trade, existing: Trade) {
 
 // ── India trades ──────────────────────────────────────────────────────────────
 
-router.get('/trades', (_req: Request, res: Response) => {
-  const { portfolio_size } = getSettings();
-  res.json(enrichAll(getAllTrades(), portfolio_size));
+router.get('/trades', async (_req: Request, res: Response) => {
+  const { portfolio_size } = await getSettings();
+  res.json(enrichAll(await getAllTrades(), portfolio_size));
 });
 
-router.get('/trades/:id', (req: Request, res: Response) => {
-  const trade = getTradeById(parseInt(req.params.id));
+router.get('/trades/:id', async (req: Request, res: Response) => {
+  const trade = await getTradeById(parseInt(req.params.id));
   if (!trade) return res.status(404).json({ error: 'Trade not found' });
-  const { portfolio_size } = getSettings();
+  const { portfolio_size } = await getSettings();
   res.json(enrichTrade(trade, portfolio_size));
 });
 
-router.post('/trades', (req: Request, res: Response) => {
+router.post('/trades', async (req: Request, res: Response) => {
   const body = req.body as Trade;
   if (!body.stock || !body.entry_date || !body.entry_quantity || !body.entry_price) {
     return res.status(400).json({ error: 'Required: stock, entry_date, entry_quantity, entry_price' });
   }
-  const trade = createTrade({
+  const trade = await createTrade({
     stock: body.stock.toUpperCase().trim(),
     trade_type: body.trade_type || 'swing',
     entry_date: body.entry_date,
     entry_quantity: Number(body.entry_quantity),
     entry_price: Number(body.entry_price),
+    stop_loss: body.stop_loss ? Number(body.stop_loss) : null,
     reason_for_entry: body.reason_for_entry || '',
     exit_date: null,
     exit_quantity: null,
@@ -170,29 +286,34 @@ router.post('/trades', (req: Request, res: Response) => {
     emotions: '',
     exits: [],
   });
-  const { portfolio_size } = getSettings();
+  const { portfolio_size } = await getSettings();
+  await logActivity({ timestamp: new Date().toISOString(), action: 'TRADE_CREATED', market: 'India', trade_id: trade.id!, stock: trade.stock, details: `Entry ₹${trade.entry_price} × ${trade.entry_quantity} shares` });
   res.status(201).json(enrichTrade(trade, portfolio_size));
 });
 
-router.put('/trades/:id', (req: Request, res: Response) => {
+router.put('/trades/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const existing = getTradeById(id);
+  const existing = await getTradeById(id);
   if (!existing) return res.status(404).json({ error: 'Trade not found' });
-  const updated = updateTrade(id, buildEntryPayload(req.body as Trade, existing));
+  const updated = await updateTrade(id, buildEntryPayload(req.body as Trade, existing));
   if (!updated) return res.status(404).json({ error: 'Trade not found' });
-  const { portfolio_size } = getSettings();
+  const { portfolio_size } = await getSettings();
+  await logActivity({ timestamp: new Date().toISOString(), action: 'TRADE_UPDATED', market: 'India', trade_id: id, stock: updated.stock, details: `Entry details updated` });
   res.json(enrichTrade(updated, portfolio_size));
 });
 
-router.delete('/trades/:id', (req: Request, res: Response) => {
-  const deleted = deleteTrade(parseInt(req.params.id));
+router.delete('/trades/:id', async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const trade = await getTradeById(id);
+  const deleted = await deleteTrade(id);
   if (!deleted) return res.status(404).json({ error: 'Trade not found' });
+  if (trade) await logActivity({ timestamp: new Date().toISOString(), action: 'TRADE_DELETED', market: 'India', trade_id: id, stock: trade.stock, details: `${trade.entry_quantity} shares @ ₹${trade.entry_price} on ${trade.entry_date}` });
   res.json({ success: true });
 });
 
-router.post('/trades/:id/exits', (req: Request, res: Response) => {
+router.post('/trades/:id/exits', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const trade = getTradeById(id);
+  const trade = await getTradeById(id);
   if (!trade) return res.status(404).json({ error: 'Trade not found' });
 
   const newExit: ExitRecord = {
@@ -207,7 +328,6 @@ router.post('/trades/:id/exits', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Exit quantity must be greater than 0' });
   }
 
-  // Auto-migrate legacy scalar fields to exits array on first new close
   let exits: ExitRecord[] = trade.exits ? [...trade.exits] : [];
   if (exits.length === 0 && trade.exit_quantity && trade.exit_price) {
     exits = [{
@@ -226,38 +346,71 @@ router.post('/trades/:id/exits', (req: Request, res: Response) => {
   }
 
   exits.push(newExit);
-
-  const updated = updateTrade(id, { ...trade, exits });
+  const updated = await updateTrade(id, { ...trade, exits });
   if (!updated) return res.status(404).json({ error: 'Trade not found' });
-  const { portfolio_size } = getSettings();
+  const { portfolio_size } = await getSettings();
+  const pl = (newExit.price - trade.entry_price) * newExit.quantity;
+  const plPct = ((newExit.price - trade.entry_price) / trade.entry_price) * 100;
+  await logActivity({ timestamp: new Date().toISOString(), action: 'EXIT_ADDED', market: 'India', trade_id: id, stock: trade.stock, details: `Exit ₹${newExit.price} × ${newExit.quantity} shares · P/L ${pl >= 0 ? '+' : ''}₹${pl.toFixed(2)} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%)` });
   res.json(enrichTrade(updated, portfolio_size));
+});
+
+router.put('/trades/:id/exits', async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const trade = await getTradeById(id);
+  if (!trade) return res.status(404).json({ error: 'Trade not found' });
+  const exits: ExitRecord[] = req.body.exits;
+  if (!Array.isArray(exits)) return res.status(400).json({ error: 'exits must be an array' });
+  const totalExited = exits.reduce((s, e) => s + Number(e.quantity), 0);
+  if (totalExited > trade.entry_quantity + 1e-8) {
+    return res.status(400).json({ error: `Total exit quantity ${totalExited} exceeds entry quantity ${trade.entry_quantity}` });
+  }
+  const updated = await updateTrade(id, { ...trade, exits });
+  if (!updated) return res.status(404).json({ error: 'Trade not found' });
+  const { portfolio_size } = await getSettings();
+  await logActivity({ timestamp: new Date().toISOString(), action: 'EXIT_UPDATED', market: 'India', trade_id: id, stock: trade.stock, details: `${exits.length} exit record${exits.length !== 1 ? 's' : ''} updated` });
+  res.json(enrichTrade(updated, portfolio_size));
+});
+
+router.post('/ai/analysis', async (req: Request, res: Response) => {
+  const market = req.body.market === 'us' ? 'us' : 'india';
+  const question = String(req.body.question || 'Summarize the journal and highlight anything important.');
+  const trades = Array.isArray(req.body.trades) ? req.body.trades as JournalTrade[] : [];
+  const settings = await getSettings();
+  const payloadTrades = trades.length > 0 ? trades : market === 'us'
+    ? enrichAll(await getAllUsTrades(), settings.us_portfolio_size)
+    : enrichAll(await getAllTrades(), settings.portfolio_size);
+
+  const answer = buildRuleBasedAiResponse(question, payloadTrades, market);
+  res.json({ answer, source: 'static' as const });
 });
 
 // ── US trades ─────────────────────────────────────────────────────────────────
 
-router.get('/us-trades', (_req: Request, res: Response) => {
-  const { us_portfolio_size } = getSettings();
-  res.json(enrichAll(getAllUsTrades(), us_portfolio_size));
+router.get('/us-trades', async (_req: Request, res: Response) => {
+  const { us_portfolio_size } = await getSettings();
+  res.json(enrichAll(await getAllUsTrades(), us_portfolio_size));
 });
 
-router.get('/us-trades/:id', (req: Request, res: Response) => {
-  const trade = getUsTradeById(parseInt(req.params.id));
+router.get('/us-trades/:id', async (req: Request, res: Response) => {
+  const trade = await getUsTradeById(parseInt(req.params.id));
   if (!trade) return res.status(404).json({ error: 'Trade not found' });
-  const { us_portfolio_size } = getSettings();
+  const { us_portfolio_size } = await getSettings();
   res.json(enrichTrade(trade, us_portfolio_size));
 });
 
-router.post('/us-trades', (req: Request, res: Response) => {
+router.post('/us-trades', async (req: Request, res: Response) => {
   const body = req.body as Trade;
   if (!body.stock || !body.entry_date || !body.entry_quantity || !body.entry_price) {
     return res.status(400).json({ error: 'Required: stock, entry_date, entry_quantity, entry_price' });
   }
-  const trade = createUsTrade({
+  const trade = await createUsTrade({
     stock: body.stock.toUpperCase().trim(),
     trade_type: body.trade_type || 'swing',
     entry_date: body.entry_date,
     entry_quantity: Number(body.entry_quantity),
     entry_price: Number(body.entry_price),
+    stop_loss: body.stop_loss ? Number(body.stop_loss) : null,
     reason_for_entry: body.reason_for_entry || '',
     exit_date: null,
     exit_quantity: null,
@@ -266,29 +419,34 @@ router.post('/us-trades', (req: Request, res: Response) => {
     emotions: '',
     exits: [],
   });
-  const { us_portfolio_size } = getSettings();
+  const { us_portfolio_size } = await getSettings();
+  await logActivity({ timestamp: new Date().toISOString(), action: 'TRADE_CREATED', market: 'US', trade_id: trade.id!, stock: trade.stock, details: `Entry $${trade.entry_price} × ${trade.entry_quantity} shares` });
   res.status(201).json(enrichTrade(trade, us_portfolio_size));
 });
 
-router.put('/us-trades/:id', (req: Request, res: Response) => {
+router.put('/us-trades/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const existing = getUsTradeById(id);
+  const existing = await getUsTradeById(id);
   if (!existing) return res.status(404).json({ error: 'Trade not found' });
-  const updated = updateUsTrade(id, buildEntryPayload(req.body as Trade, existing));
+  const updated = await updateUsTrade(id, buildEntryPayload(req.body as Trade, existing));
   if (!updated) return res.status(404).json({ error: 'Trade not found' });
-  const { us_portfolio_size } = getSettings();
+  const { us_portfolio_size } = await getSettings();
+  await logActivity({ timestamp: new Date().toISOString(), action: 'TRADE_UPDATED', market: 'US', trade_id: id, stock: updated.stock, details: `Entry details updated` });
   res.json(enrichTrade(updated, us_portfolio_size));
 });
 
-router.delete('/us-trades/:id', (req: Request, res: Response) => {
-  const deleted = deleteUsTrade(parseInt(req.params.id));
+router.delete('/us-trades/:id', async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  const trade = await getUsTradeById(id);
+  const deleted = await deleteUsTrade(id);
   if (!deleted) return res.status(404).json({ error: 'Trade not found' });
+  if (trade) await logActivity({ timestamp: new Date().toISOString(), action: 'TRADE_DELETED', market: 'US', trade_id: id, stock: trade.stock, details: `${trade.entry_quantity} shares @ $${trade.entry_price} on ${trade.entry_date}` });
   res.json({ success: true });
 });
 
-router.post('/us-trades/:id/exits', (req: Request, res: Response) => {
+router.post('/us-trades/:id/exits', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const trade = getUsTradeById(id);
+  const trade = await getUsTradeById(id);
   if (!trade) return res.status(404).json({ error: 'Trade not found' });
 
   const newExit: ExitRecord = {
@@ -321,16 +479,18 @@ router.post('/us-trades/:id/exits', (req: Request, res: Response) => {
   }
 
   exits.push(newExit);
-
-  const updated = updateUsTrade(id, { ...trade, exits });
+  const updated = await updateUsTrade(id, { ...trade, exits });
   if (!updated) return res.status(404).json({ error: 'Trade not found' });
-  const { us_portfolio_size } = getSettings();
+  const { us_portfolio_size } = await getSettings();
+  const pl = (newExit.price - trade.entry_price) * newExit.quantity;
+  const plPct = ((newExit.price - trade.entry_price) / trade.entry_price) * 100;
+  await logActivity({ timestamp: new Date().toISOString(), action: 'EXIT_ADDED', market: 'US', trade_id: id, stock: trade.stock, details: `Exit $${newExit.price} × ${newExit.quantity} shares · P/L ${pl >= 0 ? '+' : ''}$${pl.toFixed(2)} (${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%)` });
   res.json(enrichTrade(updated, us_portfolio_size));
 });
 
-router.put('/trades/:id/exits', (req: Request, res: Response) => {
+router.put('/us-trades/:id/exits', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const trade = getTradeById(id);
+  const trade = await getUsTradeById(id);
   if (!trade) return res.status(404).json({ error: 'Trade not found' });
   const exits: ExitRecord[] = req.body.exits;
   if (!Array.isArray(exits)) return res.status(400).json({ error: 'exits must be an array' });
@@ -338,41 +498,33 @@ router.put('/trades/:id/exits', (req: Request, res: Response) => {
   if (totalExited > trade.entry_quantity + 1e-8) {
     return res.status(400).json({ error: `Total exit quantity ${totalExited} exceeds entry quantity ${trade.entry_quantity}` });
   }
-  const updated = updateTrade(id, { ...trade, exits });
+  const updated = await updateUsTrade(id, { ...trade, exits });
   if (!updated) return res.status(404).json({ error: 'Trade not found' });
-  const { portfolio_size } = getSettings();
-  res.json(enrichTrade(updated, portfolio_size));
+  const { us_portfolio_size } = await getSettings();
+  await logActivity({ timestamp: new Date().toISOString(), action: 'EXIT_UPDATED', market: 'US', trade_id: id, stock: trade.stock, details: `${exits.length} exit record${exits.length !== 1 ? 's' : ''} updated` });
+  res.json(enrichTrade(updated, us_portfolio_size));
 });
 
-router.put('/us-trades/:id/exits', (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
-  const trade = getUsTradeById(id);
-  if (!trade) return res.status(404).json({ error: 'Trade not found' });
-  const exits: ExitRecord[] = req.body.exits;
-  if (!Array.isArray(exits)) return res.status(400).json({ error: 'exits must be an array' });
-  const totalExited = exits.reduce((s, e) => s + Number(e.quantity), 0);
-  if (totalExited > trade.entry_quantity + 1e-8) {
-    return res.status(400).json({ error: `Total exit quantity ${totalExited} exceeds entry quantity ${trade.entry_quantity}` });
-  }
-  const updated = updateUsTrade(id, { ...trade, exits });
-  if (!updated) return res.status(404).json({ error: 'Trade not found' });
-  const { us_portfolio_size } = getSettings();
-  res.json(enrichTrade(updated, us_portfolio_size));
+// ── Activity log ──────────────────────────────────────────────────────────────
+
+router.get('/activity', async (_req: Request, res: Response) => {
+  res.json(await getActivityLog());
 });
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-router.get('/settings', (_req: Request, res: Response) => {
-  res.json(getSettings());
+
+router.get('/settings', async (_req: Request, res: Response) => {
+  res.json(await getSettings());
 });
 
-router.put('/settings', (req: Request, res: Response) => {
+router.put('/settings', async (req: Request, res: Response) => {
   const { portfolio_size, us_portfolio_size, usd_to_inr } = req.body;
   const updated = {
     portfolio_size: parseFloat(String(portfolio_size)) || 300000,
     us_portfolio_size: parseFloat(String(us_portfolio_size)) || 50000,
     usd_to_inr: parseFloat(String(usd_to_inr)) || 84,
   };
-  saveSettings(updated);
+  await saveSettings(updated);
   res.json(updated);
 });
 
@@ -384,7 +536,6 @@ router.get('/usd-to-inr/:date', async (req: Request, res: Response) => {
   }
 
   try {
-    // Try open-er-api.com (free, no key required)
     const data = await fetchJson<{ rates?: { INR?: number } }>(
       `https://open.er-api.com/v6/latest/USD`
     );
@@ -397,7 +548,7 @@ router.get('/usd-to-inr/:date', async (req: Request, res: Response) => {
   }
 });
 
-// ── Stock Prices ──────────────────────────────────────────────────────────────────
+// ── Stock Prices ──────────────────────────────────────────────────────────────
 
 interface YahooChartMeta {
   regularMarketPrice: number;
@@ -413,51 +564,58 @@ interface YahooChartResponse {
     error?: { description: string };
   };
 }
+interface PriceCacheEntry {
+  value: { currentPrice: number; previousClose: number; dayHigh: number; dayLow: number; timestamp: number };
+  expires: number;
+}
 
-type YahooPriceResult = { currentPrice: number; previousClose: number; dayHigh: number; dayLow: number; timestamp: number };
+const priceCache = new Map<string, PriceCacheEntry>();
+const pendingFetches = new Map<string, Promise<PriceCacheEntry>>();
+const CACHE_TTL_SEC = parseInt(process.env.YF_CACHE_TTL || '60', 10);
 
-async function fetchYahooPrice(ticker: string): Promise<YahooPriceResult> {
-  const cached = priceCache.get(ticker);
-  if (cached && Date.now() < cached.expiresAt) return cached.data;
+async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; previousClose: number; dayHigh: number; dayLow: number; timestamp: number }> {
+  const now = Date.now();
+  const key = ticker.toUpperCase();
 
-  // If a fetch for this ticker is already in-flight, share it — avoids duplicate Yahoo requests
-  const existing = inFlight.get(ticker);
-  if (existing) return existing;
+  // Return cached value if still valid
+  const cached = priceCache.get(key);
+  if (cached && cached.expires > now) return cached.value;
 
-  const fetch = (async () => {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+  // If there's already an in-flight fetch for this ticker, await it
+  const pending = pendingFetches.get(key);
+  if (pending) {
+    const result = await pending;
+    return result.value;
+  }
 
-    let data: YahooChartResponse;
+  // Start a new fetch and store the promise to dedupe concurrent calls
+  const p = (async () => {
     try {
-      data = await fetchJson<YahooChartResponse>(url);
-    } catch (err: unknown) {
-      // Retry once after 2 s on 429
-      if (err instanceof Error && err.message.includes('429')) {
-        await sleep(2000);
-        data = await fetchJson<YahooChartResponse>(url);
-      } else {
-        throw err;
-      }
-    } finally {
-      inFlight.delete(ticker);
-    }
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+      const data = await fetchJson<YahooChartResponse>(url);
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta?.regularMarketPrice) throw new Error(`No price data for ${ticker}`);
+      const pval = meta.regularMarketPrice;
+      const value = {
+        currentPrice:  Math.round(pval * 100) / 100,
+        previousClose: Math.round((meta.chartPreviousClose ?? pval) * 100) / 100,
+        dayHigh:       Math.round((meta.regularMarketDayHigh ?? pval) * 100) / 100,
+        dayLow:        Math.round((meta.regularMarketDayLow  ?? pval) * 100) / 100,
+        timestamp:     meta.regularMarketTime ?? Math.floor(Date.now() / 1000),
+      };
 
-    const meta = data?.chart?.result?.[0]?.meta;
-    if (!meta?.regularMarketPrice) throw new Error(`No price data for ${ticker}`);
-    const p = meta.regularMarketPrice;
-    const result: YahooPriceResult = {
-      currentPrice:  Math.round(p * 100) / 100,
-      previousClose: Math.round((meta.chartPreviousClose ?? p) * 100) / 100,
-      dayHigh:       Math.round((meta.regularMarketDayHigh ?? p) * 100) / 100,
-      dayLow:        Math.round((meta.regularMarketDayLow  ?? p) * 100) / 100,
-      timestamp:     meta.regularMarketTime ?? Math.floor(Date.now() / 1000),
-    };
-    priceCache.set(ticker, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
-    return result;
+      const entry: PriceCacheEntry = { value, expires: Date.now() + CACHE_TTL_SEC * 1000 };
+      priceCache.set(key, entry);
+      return entry;
+    } finally {
+      // remove pending promise regardless of success/failure
+      pendingFetches.delete(key);
+    }
   })();
 
-  inFlight.set(ticker, fetch);
-  return fetch;
+  pendingFetches.set(key, p);
+  const entry = await p;
+  return entry.value;
 }
 
 router.get('/stock-price/:symbol/:exchange', async (req: Request, res: Response) => {
@@ -475,7 +633,6 @@ router.get('/stock-price/:symbol/:exchange', async (req: Request, res: Response)
   } catch (primaryErr) {
     console.error(`Yahoo Finance error for ${ticker}:`, primaryErr);
 
-    // For US stocks only: try BSE suffix as secondary attempt
     if (exchange === 'IN') {
       try {
         const bseTicker = `${symbol.toUpperCase()}.BO`;
@@ -486,7 +643,6 @@ router.get('/stock-price/:symbol/:exchange', async (req: Request, res: Response)
       }
     }
 
-    // Last-resort hardcoded fallback (only for known symbols — avoids wildly wrong values)
     const knownPrices: Record<string, number> = {
       'NATIONALUM': 420, 'NLCINDIA': 300, 'AVANTIFEEDS': 1487, 'TRUALT': 445,
       'ATHERENERGY': 908, 'GLENMARK': 2403, 'IMFA': 1566, 'PARAS': 834,
