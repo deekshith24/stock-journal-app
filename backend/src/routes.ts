@@ -581,7 +581,9 @@ interface YahooCrumbSession {
 }
 let yahooCrumbSession: YahooCrumbSession | null = null;
 let crumbFetchPromise: Promise<YahooCrumbSession> | null = null;
+let crumbBackoffUntil = 0; // epoch ms — don't retry before this
 const CRUMB_TTL_MS = 50 * 60 * 1000; // 50 minutes
+const CRUMB_BACKOFF_MS = 30_000;      // wait 30s after a failed crumb fetch
 
 const YAHOO_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -595,6 +597,7 @@ const YAHOO_HEADERS = {
 async function getYahooCrumb(): Promise<YahooCrumbSession> {
   const now = Date.now();
   if (yahooCrumbSession && yahooCrumbSession.expires > now) return yahooCrumbSession;
+  if (now < crumbBackoffUntil) throw new Error('Yahoo crumb rate-limited — backing off');
   if (crumbFetchPromise) return crumbFetchPromise;
 
   crumbFetchPromise = (async () => {
@@ -608,17 +611,31 @@ async function getYahooCrumb(): Promise<YahooCrumbSession> {
       const rawCookies = consentResp.headers.getSetCookie?.() ?? [];
       const cookieStr = rawCookies.map((c: string) => c.split(';')[0]).join('; ');
 
-      // Step 2: fetch the crumb
-      const crumbResp = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
-        headers: { ...YAHOO_HEADERS, 'Cookie': cookieStr },
-      });
-      if (!crumbResp.ok) throw new Error(`Crumb fetch failed: ${crumbResp.status}`);
-      const crumb = (await crumbResp.text()).trim();
-      if (!crumb || crumb.includes('<')) throw new Error('Invalid crumb response');
+      // Step 2: fetch the crumb with retry on 429
+      let crumb = '';
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const crumbResp = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+          headers: { ...YAHOO_HEADERS, 'Cookie': cookieStr },
+        });
+        if (crumbResp.status === 429) {
+          const ra = crumbResp.headers.get('retry-after');
+          const waitMs = ra ? Number(ra) * 1000 : attempt * 5000;
+          if (attempt < 3) { await new Promise(r => setTimeout(r, waitMs)); continue; }
+          throw new Error(`Crumb fetch failed: 429`);
+        }
+        if (!crumbResp.ok) throw new Error(`Crumb fetch failed: ${crumbResp.status}`);
+        crumb = (await crumbResp.text()).trim();
+        if (crumb && !crumb.includes('<')) break;
+        throw new Error('Invalid crumb response');
+      }
+      if (!crumb) throw new Error('Empty crumb after retries');
 
       const session: YahooCrumbSession = { crumb, cookie: cookieStr, expires: Date.now() + CRUMB_TTL_MS };
       yahooCrumbSession = session;
       return session;
+    } catch (err) {
+      crumbBackoffUntil = Date.now() + CRUMB_BACKOFF_MS;
+      throw err;
     } finally {
       crumbFetchPromise = null;
     }
@@ -723,24 +740,7 @@ router.get('/stock-price/:symbol/:exchange', async (req: Request, res: Response)
       }
     }
 
-    const knownPrices: Record<string, number> = {
-      'NATIONALUM': 420, 'NLCINDIA': 300, 'AVANTIFEEDS': 1487, 'TRUALT': 445,
-      'ATHERENERGY': 908, 'GLENMARK': 2403, 'IMFA': 1566, 'PARAS': 834,
-      'APOLLO': 297, 'KIRLOSENG': 1668, 'SAILIFE': 1001, 'ABSLAMC': 957,
-      'DATAPATTERN': 3608, 'APAR': 10542, 'AMBER': 7836,
-      'AAPL': 195, 'GOOGL': 142, 'MSFT': 415, 'AMZN': 185,
-      'TSLA': 248, 'NVDA': 875, 'META': 485, 'NFLX': 650,
-    };
-    const fallback = knownPrices[symbol.toUpperCase()];
-    if (!fallback) {
-      return res.status(503).json({ error: `Price unavailable for ${symbol}` });
-    }
-    return res.json({
-      symbol: symbol.toUpperCase(), exchange,
-      currentPrice: fallback, previousClose: fallback,
-      dayHigh: fallback, dayLow: fallback,
-      timestamp: Math.floor(Date.now() / 1000),
-    });
+    return res.status(503).json({ error: `Price unavailable for ${symbol}` });
   }
 });
 
