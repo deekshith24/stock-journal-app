@@ -599,19 +599,14 @@ async function getYahooCrumb(): Promise<YahooCrumbSession> {
 
   crumbFetchPromise = (async () => {
     try {
-      // Step 1: hit the consent/main page to get cookies
-      const consentResp = await fetch('https://finance.yahoo.com/', {
+      // Step 1: use Yahoo's lightweight consent endpoint — far fewer response headers
+      // than finance.yahoo.com/ which causes UND_ERR_HEADERS_OVERFLOW in Node/undici
+      const consentResp = await fetch('https://fc.yahoo.com/', {
         headers: YAHOO_HEADERS,
         redirect: 'follow',
       });
       const rawCookies = consentResp.headers.getSetCookie?.() ?? [];
-      // Only keep cookies Yahoo needs for the crumb session — sending all cookies
-      // (tracking/ad) overflows Node's undici header size limit (UND_ERR_HEADERS_OVERFLOW)
-      const REQUIRED_COOKIE_PREFIXES = ['A1', 'A3', 'A1S', 'GUC', 'cmp', 'euconsent', 'thamba', 'PRF', 'GUCS'];
-      const filteredCookies = rawCookies
-        .map((c: string) => c.split(';')[0])
-        .filter((kv: string) => REQUIRED_COOKIE_PREFIXES.some(p => kv.startsWith(p)));
-      const cookieStr = filteredCookies.join('; ');
+      const cookieStr = rawCookies.map((c: string) => c.split(';')[0]).join('; ');
 
       // Step 2: fetch the crumb
       const crumbResp = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
