@@ -605,7 +605,13 @@ async function getYahooCrumb(): Promise<YahooCrumbSession> {
         redirect: 'follow',
       });
       const rawCookies = consentResp.headers.getSetCookie?.() ?? [];
-      const cookieStr = rawCookies.map((c: string) => c.split(';')[0]).join('; ');
+      // Only keep cookies Yahoo needs for the crumb session — sending all cookies
+      // (tracking/ad) overflows Node's undici header size limit (UND_ERR_HEADERS_OVERFLOW)
+      const REQUIRED_COOKIE_PREFIXES = ['A1', 'A3', 'A1S', 'GUC', 'cmp', 'euconsent', 'thamba', 'PRF', 'GUCS'];
+      const filteredCookies = rawCookies
+        .map((c: string) => c.split(';')[0])
+        .filter((kv: string) => REQUIRED_COOKIE_PREFIXES.some(p => kv.startsWith(p)));
+      const cookieStr = filteredCookies.join('; ');
 
       // Step 2: fetch the crumb
       const crumbResp = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
@@ -665,14 +671,22 @@ async function fetchYahooPrice(ticker: string): Promise<{ currentPrice: number; 
         }
       }
       const meta = data?.chart?.result?.[0]?.meta;
-      if (!meta?.regularMarketPrice) throw new Error(`No price data for ${ticker}`);
-      const pval = meta.regularMarketPrice;
+      const pval = meta?.regularMarketPrice;
+      if (!pval || !isFinite(pval) || pval <= 0) throw new Error(`No valid price data for ${ticker}`);
+
+      // Reject data that is more than 7 days old — indicates Yahoo returned bad/stale data
+      const priceTime = meta.regularMarketTime;
+      if (priceTime) {
+        const ageMs = Date.now() - priceTime * 1000;
+        if (ageMs > 7 * 24 * 60 * 60 * 1000) throw new Error(`Stale price data for ${ticker} (age: ${Math.round(ageMs / 86400000)}d)`);
+      }
+
       const value = {
         currentPrice:  Math.round(pval * 100) / 100,
         previousClose: Math.round((meta.chartPreviousClose ?? pval) * 100) / 100,
         dayHigh:       Math.round((meta.regularMarketDayHigh ?? pval) * 100) / 100,
         dayLow:        Math.round((meta.regularMarketDayLow  ?? pval) * 100) / 100,
-        timestamp:     meta.regularMarketTime ?? Math.floor(Date.now() / 1000),
+        timestamp:     priceTime ?? Math.floor(Date.now() / 1000),
       };
 
       const entry: PriceCacheEntry = { value, expires: Date.now() + CACHE_TTL_SEC * 1000 };
