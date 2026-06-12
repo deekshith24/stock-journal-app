@@ -331,6 +331,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             </span>
           )}
         </td>
+        <td style={{ minWidth: 140 }}>{renderComments(comments)}</td>
         <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>
           {t.exit_date ? `${fmtDate(t.entry_date)} – ${fmtDate(t.exit_date)}` : fmtDate(t.entry_date)}
         </td>
@@ -395,7 +396,6 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
               : <div className="text-truncate" style={{ maxWidth: 150 }} title={t.emotions}>{t.emotions}</div>
             : <span style={{ color: '#c1c8d0' }}>—</span>}
         </td>
-        <td style={{ minWidth: 140 }}>{renderComments(comments)}</td>
         <td>
           <div className="actions-cell">
             {!isChild && (t.status === 'Open' || t.status === 'Partial') && (
@@ -464,6 +464,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             {bucket.length} entries
           </span>
         </td>
+        <td style={{ minWidth: 140 }}>{renderComments(groupComments)}</td>
         <td style={{ whiteSpace: 'nowrap', fontSize: 11, color: '#6c757d' }}>{dateLabel}</td>
         <td>
           <span className={`badge ${anyPartial ? 'badge-partial' : 'badge-open'}`}>
@@ -506,7 +507,6 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             : '—'}
         </td>
         <td>—</td>
-        <td style={{ minWidth: 140 }}>{renderComments(groupComments)}</td>
         <td><div className="actions-cell">
           <button className="btn-icon btn-close" onClick={e => { e.stopPropagation(); onCloseGroup(stock, bucket); }} title="Close position (FIFO)">✓</button>
           <button className="btn-icon" onClick={e => { e.stopPropagation(); onAddPosition(stock); }} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
@@ -557,6 +557,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             <tr>
               <th>#</th>
               <th>Stock</th>
+              <th>Comment</th>
               <th>Date</th>
               <th>Status</th>
               <th>Days</th>
@@ -575,7 +576,6 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleCol('emotions')} title="Click to expand/collapse">
                 Emotions {expandedCols.has('emotions') ? '⊖' : '⊕'}
               </th>
-              <th>Comment</th>
               <th>Actions</th>
             </tr>
           </thead>
