@@ -130,14 +130,21 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                 <div className="form-group">
                   <label>Entry Quantity *</label>
                   <input type="number" required min={isUS ? '0.000001' : '1'} step={isUS ? 'any' : '1'}
-                    value={form.entry_quantity || ''}
-                    onChange={e => set('entry_quantity', parseFloat(e.target.value) || 0)}
+                    value={form.entry_quantity === 0 ? '' : form.entry_quantity}
+                    onChange={e => {
+                      const v = e.target.value;
+                      set('entry_quantity', v === '' ? 0 : parseFloat(v) || 0);
+                    }}
                     placeholder="No. of shares" />
                 </div>
                 <div className="form-group">
                   <label>Entry Price ({sym}) *</label>
-                  <input type="number" required min="0" step="0.0001" value={form.entry_price || ''}
-                    onChange={e => set('entry_price', parseFloat(e.target.value) || 0)}
+                  <input type="number" required min="0" step="0.0001"
+                    value={form.entry_price === 0 ? '' : form.entry_price}
+                    onChange={e => {
+                      const v = e.target.value;
+                      set('entry_price', v === '' ? 0 : parseFloat(v) || 0);
+                    }}
                     placeholder="Price per share" />
                 </div>
                 <div className="form-group">

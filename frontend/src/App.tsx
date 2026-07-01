@@ -822,6 +822,7 @@ export default function App() {
         <ClosePositionModal
           trade={closingTrade}
           currency={isUS ? 'USD' : 'INR'}
+          exchangeRate={isUS ? lastUsdToInrRate : undefined}
           exitReasonSuggestions={exitReasonSuggestions}
           emotionSuggestions={emotionSuggestions}
           onSave={handleClosePosition}

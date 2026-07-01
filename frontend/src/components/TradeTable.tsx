@@ -357,7 +357,27 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             <div style={{ fontSize: 10, marginTop: 1, color: '#dc2626', fontWeight: 600 }}>⚠ No SL</div>
           )}
         </td>
-        <td className="text-right"><span className="mask-price">{fmt(invested, 0, locale)}</span></td>
+        <td className="text-right">
+          {(() => {
+            const initialInvested = invested;
+            if (!isOpenOrPartial) {
+              return <span className="mask-price">{fmt(initialInvested, 0, locale)}</span>;
+            }
+            const currentInvested = t.entry_price * remainingQty(t) * rateForTrade;
+            const hasPartialExit = Math.abs(remainingQty(t) - t.entry_quantity) > 1e-8;
+            if (!hasPartialExit) {
+              return <span className="mask-price">{fmt(currentInvested, 0, locale)}</span>;
+            }
+            return (
+              <div>
+                <div><span className="mask-price">{fmt(currentInvested, 0, locale)}</span></div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+                  <span className="mask-price">{fmt(initialInvested, 0, locale)}</span>
+                </div>
+              </div>
+            );
+          })()}
+        </td>
         <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>
         <td className="text-right">
           {(() => {

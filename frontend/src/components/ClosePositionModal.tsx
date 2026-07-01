@@ -4,6 +4,7 @@ import { Trade, ExitRecord } from '../types';
 interface Props {
   trade: Trade;
   currency: 'INR' | 'USD';
+  exchangeRate?: number;
   exitReasonSuggestions: string[];
   emotionSuggestions: string[];
   onSave: (exit: ExitRecord) => Promise<void>;
@@ -15,7 +16,7 @@ function fmtDate(d: string): string {
   return `${day}/${m}/${y.slice(2)}`;
 }
 
-export default function ClosePositionModal({ trade, currency, exitReasonSuggestions, emotionSuggestions, onSave, onClose }: Props) {
+export default function ClosePositionModal({ trade, currency, exchangeRate, exitReasonSuggestions, emotionSuggestions, onSave, onClose }: Props) {
   const today = new Date().toISOString().slice(0, 10);
   const sym = currency === 'INR' ? '₹' : '$';
   const locale = currency === 'INR' ? 'en-IN' : 'en-US';
@@ -197,11 +198,21 @@ export default function ClosePositionModal({ trade, currency, exitReasonSuggesti
               <div className="calc-preview">
                 <div className="item">This exit P/L: <span style={{ color: thisPL >= 0 ? '#16a34a' : '#dc2626' }}>
                   {thisPL >= 0 ? '+' : ''}{sym}{Math.abs(thisPL).toLocaleString(locale, { maximumFractionDigits: 0 })}
+                  {currency === 'USD' && exchangeRate && (
+                    <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.75 }}>
+                      (₹{Math.abs(thisPL * exchangeRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })})
+                    </span>
+                  )}
                 </span></div>
                 {alreadyExited > 0 && totalPL != null && (
                   <div className="item">Cumulative P/L: <span style={{ color: totalPL >= 0 ? '#16a34a' : '#dc2626' }}>
                     {totalPL >= 0 ? '+' : ''}{sym}{Math.abs(totalPL).toLocaleString(locale, { maximumFractionDigits: 0 })}
                     {totalPLPct != null && ` (${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}%)`}
+                    {currency === 'USD' && exchangeRate && (
+                      <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.75 }}>
+                        (₹{Math.abs(totalPL * exchangeRate).toLocaleString('en-IN', { maximumFractionDigits: 0 })})
+                      </span>
+                    )}
                   </span></div>
                 )}
                 {alreadyExited === 0 && totalPLPct != null && (
