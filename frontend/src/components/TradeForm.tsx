@@ -49,6 +49,8 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
   const [exits, setExits] = useState<ExitRecord[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [entryReasonPreset, setEntryReasonPreset] = useState('');
+  const [qtyStr, setQtyStr] = useState('');
+  const [priceStr, setPriceStr] = useState('');
 
   const sym    = currency === 'INR' ? '₹' : '$';
   const locale = currency === 'INR' ? 'en-IN' : 'en-US';
@@ -65,6 +67,8 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
         stop_loss: trade.stop_loss ?? null,
         reason_for_entry: trade.reason_for_entry,
       });
+      setQtyStr(trade.entry_quantity === 0 ? '' : String(trade.entry_quantity));
+      setPriceStr(trade.entry_price === 0 ? '' : String(trade.entry_price));
       const presetValue = entryReasonOptions.includes(trade.reason_for_entry)
         ? trade.reason_for_entry
         : entryReasonSuggestions.includes(trade.reason_for_entry)
@@ -74,6 +78,8 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
       setExits(initialExits(trade));
     } else {
       setForm({ ...EMPTY, stock: initialStock ?? '', trade_type: defaultTradeType, entry_date: getTodayDate() });
+      setQtyStr('');
+      setPriceStr('');
       setEntryReasonPreset('');
       setExits(null);
     }
@@ -130,20 +136,24 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                 <div className="form-group">
                   <label>Entry Quantity *</label>
                   <input type="number" required min={isUS ? '0.000001' : '1'} step={isUS ? 'any' : '1'}
-                    value={form.entry_quantity === 0 ? '' : form.entry_quantity}
+                    value={qtyStr}
                     onChange={e => {
                       const v = e.target.value;
-                      set('entry_quantity', v === '' ? 0 : parseFloat(v) || 0);
+                      setQtyStr(v);
+                      const n = parseFloat(v);
+                      if (!isNaN(n)) set('entry_quantity', n);
                     }}
                     placeholder="No. of shares" />
                 </div>
                 <div className="form-group">
                   <label>Entry Price ({sym}) *</label>
                   <input type="number" required min="0" step="0.0001"
-                    value={form.entry_price === 0 ? '' : form.entry_price}
+                    value={priceStr}
                     onChange={e => {
                       const v = e.target.value;
-                      set('entry_price', v === '' ? 0 : parseFloat(v) || 0);
+                      setPriceStr(v);
+                      const n = parseFloat(v);
+                      if (!isNaN(n)) set('entry_price', n);
                     }}
                     placeholder="Price per share" />
                 </div>
