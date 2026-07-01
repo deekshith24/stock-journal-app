@@ -546,7 +546,12 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           )}
         </td>
         <td className="text-right" style={{ fontWeight: 600 }}><span className="mask-price">{fmt(totalInvested, 0, locale)}</span></td>
-        <td>—</td>
+        <td className="text-right">
+          {(() => {
+            const totalPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
+            return totalPf > 0 ? `${fmt(totalPf, 2, locale)}%` : '—';
+          })()}
+        </td>
         <td className="text-right">
           {(() => {
             if (!portfolioSize) return <span style={{ color: '#c1c8d0' }}>—</span>;
