@@ -761,6 +761,7 @@ export default function App() {
               exchangeRate={exchangeRate}
               dateRates={dateRates}
               stockPrices={stockPrices}
+              portfolioSize={portfolioSize}
               onEdit={handleEdit}
               onClose={t => setClosingTrade(t)}
               onCloseGroup={(stock, trades) => setClosingGroup({ stock, trades })}

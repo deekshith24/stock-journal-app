@@ -9,6 +9,7 @@ interface Props {
   exchangeRate?: number;
   dateRates?: Record<string, number>;
   stockPrices?: Record<string, StockPrice>;
+  portfolioSize?: number;
   onEdit: (trade: Trade) => void;
   onDelete: (trade: Trade) => void;
   onClose: (trade: Trade) => void;
@@ -220,7 +221,7 @@ function isStalledTrade(t: Trade, currentPrice?: number): boolean {
   return currentPrice <= entry || pctMove <= 1;
 }
 
-export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional }: Props) {
+export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, portfolioSize, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
   const [editingGroupSL, setEditingGroupSL] = useState<{ stock: string; value: string } | null>(null);
@@ -358,6 +359,32 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td className="text-right"><span className="mask-price">{fmt(invested, 0, locale)}</span></td>
         <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>
+        <td className="text-right">
+          {(() => {
+            if (!portfolioSize) return <span style={{ color: '#c1c8d0' }}>—</span>;
+            if (isOpenOrPartial) {
+              // No SL: show nothing useful
+              if (t.stop_loss == null) return <span style={{ color: '#c1c8d0' }}>—</span>;
+              const slImpact = (t.stop_loss - t.entry_price) * remainingQty(t) * todayRate;
+              const impactPct = (slImpact / portfolioSize) * 100;
+              const isPositive = impactPct >= 0;
+              return (
+                <span style={{ color: isPositive ? '#16a34a' : impactPct < -1 ? '#dc2626' : '#b45309', fontWeight: 600 }}
+                  title={isPositive ? 'SL is above entry — protected' : 'Capital lost if SL hits'}>
+                  {impactPct >= 0 ? '+' : ''}{fmt(impactPct, 2, locale)}%
+                </span>
+              );
+            }
+            // Closed: P/L impact on portfolio
+            if (pl == null || pl === 0) return <span style={{ color: '#c1c8d0' }}>—</span>;
+            const impactPct = (pl / portfolioSize) * 100;
+            return (
+              <span style={{ color: impactPct > 0 ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+                {impactPct >= 0 ? '+' : ''}{fmt(impactPct, 2, locale)}%
+              </span>
+            );
+          })()}
+        </td>
         <td>
           {t.reason_for_entry
             ? expandedCols.has('entryReason')
@@ -488,6 +515,24 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td className="text-right" style={{ fontWeight: 600 }}><span className="mask-price">{fmt(totalInvested, 0, locale)}</span></td>
         <td>—</td>
+        <td className="text-right">
+          {(() => {
+            if (!portfolioSize) return <span style={{ color: '#c1c8d0' }}>—</span>;
+            const hasSL = bucket.some(t => t.stop_loss != null);
+            if (!hasSL) return <span style={{ color: '#c1c8d0' }}>—</span>;
+            const slImpact = bucket.reduce((s, t) => {
+              if (t.stop_loss == null) return s;
+              return s + (t.stop_loss - t.entry_price) * remainingQty(t) * todayRate;
+            }, 0);
+            const impactPct = (slImpact / portfolioSize) * 100;
+            const isPositive = impactPct >= 0;
+            return (
+              <span style={{ color: isPositive ? '#16a34a' : Math.abs(impactPct) > 1 ? '#dc2626' : '#b45309', fontWeight: 600 }}>
+                {impactPct >= 0 ? '+' : ''}{fmt(impactPct, 2, locale)}%
+              </span>
+            );
+          })()}
+        </td>
         <td>—</td>
         <td>—</td>
         <td className={`text-right ${plClass(realizedPL || null)}`}>
@@ -565,6 +610,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
               <th>Price ({sym})</th>
               <th>Invested ({sym})</th>
               <th>PF %</th>
+              <th title="Open: SL impact on portfolio. Closed: realized P/L impact on portfolio.">Impact %</th>
               <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleCol('entryReason')} title="Click to expand/collapse">
                 Reason for Entry {expandedCols.has('entryReason') ? '⊖' : '⊕'}
               </th>
