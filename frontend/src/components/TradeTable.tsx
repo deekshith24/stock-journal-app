@@ -363,16 +363,28 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           {(() => {
             if (!portfolioSize) return <span style={{ color: '#c1c8d0' }}>—</span>;
             if (isOpenOrPartial) {
-              // No SL: show nothing useful
-              if (t.stop_loss == null) return <span style={{ color: '#c1c8d0' }}>—</span>;
-              const slImpact = (t.stop_loss - t.entry_price) * remainingQty(t) * todayRate;
-              const impactPct = (slImpact / portfolioSize) * 100;
-              const isPositive = impactPct >= 0;
+              // Primary: current unrealized impact on portfolio (if price available)
+              const unrealImpactPct = unrealizedPL != null ? (unrealizedPL / portfolioSize) * 100 : null;
+              // Secondary: SL impact (what happens if SL hits)
+              const slImpactPct = t.stop_loss != null
+                ? ((t.stop_loss - t.entry_price) * remainingQty(t) * todayRate / portfolioSize) * 100
+                : null;
+              if (unrealImpactPct == null && slImpactPct == null) return <span style={{ color: '#c1c8d0' }}>—</span>;
               return (
-                <span style={{ color: isPositive ? '#16a34a' : impactPct < -1 ? '#dc2626' : '#b45309', fontWeight: 600 }}
-                  title={isPositive ? 'SL is above entry — protected' : 'Capital lost if SL hits'}>
-                  {impactPct >= 0 ? '+' : ''}{fmt(impactPct, 2, locale)}%
-                </span>
+                <div>
+                  {unrealImpactPct != null && (
+                    <span style={{ color: unrealImpactPct > 0 ? '#16a34a' : unrealImpactPct < 0 ? '#dc2626' : '#64748b', fontWeight: 600 }}
+                      title="Current unrealized impact on portfolio">
+                      {unrealImpactPct >= 0 ? '+' : ''}{fmt(unrealImpactPct, 2, locale)}%
+                    </span>
+                  )}
+                  {slImpactPct != null && (
+                    <div style={{ fontSize: 10, marginTop: 1, color: slImpactPct >= 0 ? '#16a34a' : Math.abs(slImpactPct) > 1 ? '#dc2626' : '#b45309', opacity: 0.85 }}
+                      title="Portfolio impact if SL hits">
+                      SL: {slImpactPct >= 0 ? '+' : ''}{fmt(slImpactPct, 2, locale)}%
+                    </div>
+                  )}
+                </div>
               );
             }
             // Closed: P/L impact on portfolio
@@ -518,18 +530,29 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className="text-right">
           {(() => {
             if (!portfolioSize) return <span style={{ color: '#c1c8d0' }}>—</span>;
+            const unrealImpactPct = unrealizedPL != null ? (unrealizedPL / portfolioSize) * 100 : null;
             const hasSL = bucket.some(t => t.stop_loss != null);
-            if (!hasSL) return <span style={{ color: '#c1c8d0' }}>—</span>;
-            const slImpact = bucket.reduce((s, t) => {
+            const slImpact = hasSL ? bucket.reduce((s, t) => {
               if (t.stop_loss == null) return s;
               return s + (t.stop_loss - t.entry_price) * remainingQty(t) * todayRate;
-            }, 0);
-            const impactPct = (slImpact / portfolioSize) * 100;
-            const isPositive = impactPct >= 0;
+            }, 0) : null;
+            const slImpactPct = slImpact != null ? (slImpact / portfolioSize) * 100 : null;
+            if (unrealImpactPct == null && slImpactPct == null) return <span style={{ color: '#c1c8d0' }}>—</span>;
             return (
-              <span style={{ color: isPositive ? '#16a34a' : Math.abs(impactPct) > 1 ? '#dc2626' : '#b45309', fontWeight: 600 }}>
-                {impactPct >= 0 ? '+' : ''}{fmt(impactPct, 2, locale)}%
-              </span>
+              <div>
+                {unrealImpactPct != null && (
+                  <span style={{ color: unrealImpactPct > 0 ? '#16a34a' : unrealImpactPct < 0 ? '#dc2626' : '#64748b', fontWeight: 600 }}
+                    title="Current unrealized impact on portfolio">
+                    {unrealImpactPct >= 0 ? '+' : ''}{fmt(unrealImpactPct, 2, locale)}%
+                  </span>
+                )}
+                {slImpactPct != null && (
+                  <div style={{ fontSize: 10, marginTop: 1, color: slImpactPct >= 0 ? '#16a34a' : Math.abs(slImpactPct) > 1 ? '#dc2626' : '#b45309', opacity: 0.85 }}
+                    title="Portfolio impact if SL hits">
+                    SL: {slImpactPct >= 0 ? '+' : ''}{fmt(slImpactPct, 2, locale)}%
+                  </div>
+                )}
+              </div>
             );
           })()}
         </td>
