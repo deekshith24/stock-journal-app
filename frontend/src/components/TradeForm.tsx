@@ -203,6 +203,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                       <th style={{ ...th, textAlign: 'right' }}>P/L</th>
                       <th style={th}>Reason for Exit</th>
                       <th style={th}>Emotions</th>
+                      <th style={th}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -235,6 +236,13 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                           <td style={{ padding: '3px 4px' }}>
                             <input list="exit-emotion-options" value={ex.emotions ?? ''} onChange={e => updateExit(i, 'emotions', e.target.value)}
                               placeholder="Emotions" style={{ ...inp, width: 120 }} />
+                          </td>
+                          <td style={{ padding: '3px 6px' }}>
+                            <button type="button" title="Delete this exit"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 14, padding: '2px 4px' }}
+                              onClick={() => setExits(prev => prev ? prev.filter((_, idx) => idx !== i) : prev)}>
+                              🗑️
+                            </button>
                           </td>
                         </tr>
                       );

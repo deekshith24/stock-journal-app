@@ -33,10 +33,13 @@ export default function GroupCloseModal({ stock, trades, currency, exitReasonSug
   const sym = currency === 'INR' ? '₹' : '$';
   const locale = currency === 'INR' ? 'en-IN' : 'en-US';
 
-  // Sort oldest first for FIFO
+  // Sort oldest first for FIFO — use id as tiebreaker when same date
   const sorted = [...trades]
     .filter(t => t.status === 'Open' || t.status === 'Partial')
-    .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+    .sort((a, b) => {
+      const dateCmp = a.entry_date.localeCompare(b.entry_date);
+      return dateCmp !== 0 ? dateCmp : (a.id ?? 0) - (b.id ?? 0);
+    });
 
   const totalRemaining = sorted.reduce((s, t) => s + remainingQty(t), 0);
 
