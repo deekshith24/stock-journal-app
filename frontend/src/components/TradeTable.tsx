@@ -378,7 +378,23 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             );
           })()}
         </td>
-        <td className="text-right">{t.pf_percentage != null ? `${fmt(t.pf_percentage, 2, locale)}%` : '—'}</td>
+        <td className="text-right">
+          {(() => {
+            if (t.pf_percentage == null) return '—';
+            if (!isOpenOrPartial) return `${fmt(t.pf_percentage, 2, locale)}%`;
+            const hasPartialExit = Math.abs(remainingQty(t) - t.entry_quantity) > 1e-8;
+            if (!hasPartialExit) return `${fmt(t.pf_percentage, 2, locale)}%`;
+            const currentPfPct = portfolioSize && portfolioSize > 0
+              ? (t.entry_price * remainingQty(t) / portfolioSize) * 100
+              : null;
+            return (
+              <div>
+                <div>{currentPfPct != null ? `${fmt(currentPfPct, 2, locale)}%` : '—'}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{fmt(t.pf_percentage, 2, locale)}%</div>
+              </div>
+            );
+          })()}
+        </td>
         <td className="text-right">
           {(() => {
             if (!portfolioSize) return <span style={{ color: '#c1c8d0' }}>—</span>;
