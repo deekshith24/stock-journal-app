@@ -548,10 +548,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         </td>
         <td className="text-center">—</td>
         <td className="text-right" style={{ fontWeight: 600 }}>{fmtQty(totalRemaining, locale)}</td>
-        <td className="text-right" style={{ fontSize: 11, color: '#6c757d' }}>
-          <div>avg <span className="mask-price">{fmt(avgEntryPrice * todayRate, 2, locale)}</span></div>
+        <td className="text-right" style={{ fontWeight: 600 }}>
+          <div><span className="mask-price">{fmt(avgEntryPrice * todayRate, 2, locale)}</span></div>
           {groupSL != null && (
-            <div style={{ fontSize: 10, marginTop: 1, color: slIsProtected ? '#16a34a' : '#b45309' }}>
+            <div style={{ fontSize: 10, marginTop: 1, color: slIsProtected ? '#16a34a' : '#b45309', fontWeight: 400 }}>
               {slIsProtected ? '✓' : '⊘'} SL <span className="mask-price">{fmt(groupSL * todayRate, 2, locale)}</span>
               {avgEntryPrice > 0 && (
                 <span style={{ marginLeft: 3, opacity: 0.85 }}>
@@ -566,20 +566,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           {(() => {
             if (!portfolioSize || portfolioSize <= 0) {
               const totalPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
-              return totalPf > 0 ? `${fmt(totalPf, 2, locale)}%` : '—';
+              return totalPf > 0 ? <strong>{fmt(totalPf, 2, locale)}%</strong> : '—';
             }
-            // Current PF% = remaining cost / portfolio
             const currentPf = (totalRemainingCost * todayRate / portfolioSize) * 100;
-            // Initial PF% = sum of original pf_percentage per entry
-            const initialPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
-            const hasPartialExit = Math.abs(totalRemainingCost - bucket.reduce((s, t) => s + t.entry_price * t.entry_quantity, 0)) > 1e-6;
-            if (!hasPartialExit) return currentPf > 0 ? `${fmt(currentPf, 2, locale)}%` : '—';
-            return (
-              <div>
-                <div>{currentPf > 0 ? `${fmt(currentPf, 2, locale)}%` : '—'}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{fmt(initialPf, 2, locale)}%</div>
-              </div>
-            );
+            return currentPf > 0 ? <strong>{fmt(currentPf, 2, locale)}%</strong> : '—';
           })()}
         </td>
         <td className="text-right">
