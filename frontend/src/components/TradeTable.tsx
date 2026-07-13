@@ -547,8 +547,8 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           </span>
         </td>
         <td className="text-center">—</td>
-        <td className="text-right" style={{ fontWeight: 600 }}>{fmtQty(totalRemaining, locale)}</td>
-        <td className="text-right" style={{ fontWeight: 600 }}>
+        <td className="text-right">{fmtQty(totalRemaining, locale)}</td>
+        <td className="text-right">
           <div><span className="mask-price">{fmt(avgEntryPrice * todayRate, 2, locale)}</span></div>
           {groupSL != null && (
             <div style={{ fontSize: 10, marginTop: 1, color: slIsProtected ? '#16a34a' : '#b45309', fontWeight: 400 }}>
@@ -561,7 +561,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
             </div>
           )}
         </td>
-        <td className="text-right" style={{ fontWeight: 600 }}><span className="mask-price">{fmt(totalInvested, 0, locale)}</span></td>
+        <td className="text-right"><span className="mask-price">{fmt(totalInvested, 0, locale)}</span></td>
         <td className="text-right">
           {(() => {
             if (!portfolioSize || portfolioSize <= 0) {
