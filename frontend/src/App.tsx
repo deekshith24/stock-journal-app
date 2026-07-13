@@ -399,7 +399,12 @@ export default function App() {
         }
       } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (isUS ? api.createUsTrade(data as any) : api.createTrade(data as any));
+        const created = await (isUS ? api.createUsTrade(data as any) : api.createTrade(data as any));
+        if (exits && exits.length > 0 && created?.id) {
+          for (const exit of exits) {
+            await (isUS ? api.addUsExit(created.id, exit) : api.addExit(created.id, exit));
+          }
+        }
       }
       setShowForm(false);
       setEditingTrade(null);
