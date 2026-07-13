@@ -564,8 +564,22 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td className="text-right" style={{ fontWeight: 600 }}><span className="mask-price">{fmt(totalInvested, 0, locale)}</span></td>
         <td className="text-right">
           {(() => {
-            const totalPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
-            return totalPf > 0 ? `${fmt(totalPf, 2, locale)}%` : '—';
+            if (!portfolioSize || portfolioSize <= 0) {
+              const totalPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
+              return totalPf > 0 ? `${fmt(totalPf, 2, locale)}%` : '—';
+            }
+            // Current PF% = remaining cost / portfolio
+            const currentPf = (totalRemainingCost * todayRate / portfolioSize) * 100;
+            // Initial PF% = sum of original pf_percentage per entry
+            const initialPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
+            const hasPartialExit = Math.abs(totalRemainingCost - bucket.reduce((s, t) => s + t.entry_price * t.entry_quantity, 0)) > 1e-6;
+            if (!hasPartialExit) return currentPf > 0 ? `${fmt(currentPf, 2, locale)}%` : '—';
+            return (
+              <div>
+                <div>{currentPf > 0 ? `${fmt(currentPf, 2, locale)}%` : '—'}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{fmt(initialPf, 2, locale)}%</div>
+              </div>
+            );
           })()}
         </td>
         <td className="text-right">
