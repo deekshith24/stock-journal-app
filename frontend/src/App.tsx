@@ -763,9 +763,6 @@ export default function App() {
                 <span style={{ fontSize: 11, color: '#6c757d' }}>
                   Portfolio: {sym}{portfolioSize.toLocaleString(locale)}
                 </span>
-                <span style={{ fontSize: 11, color: '#0f766e' }}>
-                  10% capital: {sym}{tenPercentCapital.toLocaleString(locale, { maximumFractionDigits: 0 })}
-                </span>
               </div>
             </div>
 
