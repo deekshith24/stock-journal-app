@@ -566,10 +566,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
           {(() => {
             if (!portfolioSize || portfolioSize <= 0) {
               const totalPf = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
-              return totalPf > 0 ? <strong>{fmt(totalPf, 2, locale)}%</strong> : '—';
+              return totalPf > 0 ? `${fmt(totalPf, 2, locale)}%` : '—';
             }
             const currentPf = (totalRemainingCost * todayRate / portfolioSize) * 100;
-            return currentPf > 0 ? <strong>{fmt(currentPf, 2, locale)}%</strong> : '—';
+            return currentPf > 0 ? `${fmt(currentPf, 2, locale)}%` : '—';
           })()}
         </td>
         <td className="text-right">
