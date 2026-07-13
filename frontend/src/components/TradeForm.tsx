@@ -4,7 +4,7 @@ import { entryReasonOptions, exitReasonOptions, emotionOptions } from '../consta
 
 interface TradeEntryData {
   stock: string;
-  trade_type: 'swing' | 'positional';
+  trade_type: 'swing' | 'positional' | 'intraday_short';
   entry_date: string;
   entry_quantity: number;
   entry_price: number;
@@ -14,7 +14,7 @@ interface TradeEntryData {
 
 interface Props {
   trade: Trade | null;
-  defaultTradeType: 'swing' | 'positional';
+  defaultTradeType: 'swing' | 'positional' | 'intraday_short';
   currency: 'INR' | 'USD';
   initialStock?: string;
   entryReasonSuggestions: string[];
@@ -51,10 +51,12 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
   const [entryReasonPreset, setEntryReasonPreset] = useState('');
   const [qtyStr, setQtyStr] = useState('');
   const [priceStr, setPriceStr] = useState('');
+  const [rebuyPriceStr, setRebuyPriceStr] = useState('');
 
   const sym    = currency === 'INR' ? '₹' : '$';
   const locale = currency === 'INR' ? 'en-IN' : 'en-US';
   const isUS   = currency === 'USD';
+  const isShort = form.trade_type === 'intraday_short';
 
   useEffect(() => {
     if (trade) {
@@ -80,6 +82,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
       setForm({ ...EMPTY, stock: initialStock ?? '', trade_type: defaultTradeType, entry_date: getTodayDate() });
       setQtyStr('');
       setPriceStr('');
+      setRebuyPriceStr('');
       setEntryReasonPreset('');
       setExits(null);
     }
@@ -96,6 +99,21 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isShort) {
+      const rebuyPrice = parseFloat(rebuyPriceStr);
+      if (!rebuyPrice || rebuyPrice <= 0) {
+        alert('Rebuy price is required for intraday short trades.');
+        return;
+      }
+      setSaving(true);
+      try {
+        const shortExits: ExitRecord[] = [{ date: form.entry_date, quantity: form.entry_quantity, price: rebuyPrice, reason: '', emotions: '' }];
+        await onSave({ ...form, stock: form.stock.toUpperCase().trim(), stop_loss: null }, shortExits);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     if (!trade && (form.stop_loss == null || form.stop_loss <= 0)) {
       alert('Stop Loss is required for new positions.');
       return;
@@ -114,7 +132,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal" style={{ maxWidth: exits ? 760 : 700 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{trade ? `Edit — ${trade.stock}` : `Add ${form.trade_type === 'positional' ? 'Positional' : 'Swing'} Trade`}</h2>
+          <h2>{trade ? `Edit — ${trade.stock}` : isShort ? 'Add Intraday Short Trade' : `Add ${form.trade_type === 'positional' ? 'Positional' : 'Swing'} Trade`}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
@@ -146,7 +164,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                     placeholder="No. of shares" />
                 </div>
                 <div className="form-group">
-                  <label>Entry Price ({sym}) *</label>
+                  <label>{isShort ? 'Sell Price (Short Entry)' : 'Entry Price'} ({sym}) *</label>
                   <input type="number" required min="0" step="0.0001"
                     value={priceStr}
                     onChange={e => {
@@ -155,27 +173,47 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                       const n = parseFloat(v);
                       if (!isNaN(n)) set('entry_price', n);
                     }}
-                    placeholder="Price per share" />
+                    placeholder={isShort ? 'Price you sold short at' : 'Price per share'} />
                 </div>
-                <div className="form-group">
-                  <label>Stop Loss ({sym}) {!trade && <span style={{ color: '#dc2626' }}>*</span>}</label>
-                  <input type="number" min="0" step="0.0001"
-                    value={form.stop_loss ?? ''}
-                    onChange={e => set('stop_loss', e.target.value ? parseFloat(e.target.value) : null)}
-                    placeholder="SL price"
-                    style={form.stop_loss != null && form.entry_price > 0
-                      ? { borderColor: form.stop_loss >= form.entry_price ? '#16a34a' : '#f59e0b', background: form.stop_loss >= form.entry_price ? '#f0fdf4' : '#fffbeb' }
-                      : !trade && form.entry_price > 0 ? { borderColor: '#dc2626' } : {}} />
-                  {form.stop_loss != null && form.entry_price > 0 ? (
-                    <div style={{ fontSize: 11, marginTop: 3, color: form.stop_loss >= form.entry_price ? '#16a34a' : '#92400e' }}>
-                      {form.stop_loss >= form.entry_price
-                        ? `Protected — SL ${((form.stop_loss - form.entry_price) / form.entry_price * 100).toFixed(1)}% above entry`
-                        : `Risk: ${((form.entry_price - form.stop_loss) / form.entry_price * 100).toFixed(1)}% per share`}
-                    </div>
-                  ) : !trade ? (
-                    <div style={{ fontSize: 11, marginTop: 3, color: '#dc2626' }}>Required for new positions</div>
-                  ) : null}
-                </div>
+                {isShort ? (
+                  <div className="form-group">
+                    <label>Rebuy Price ({sym}) *</label>
+                    <input type="number" required min="0" step="0.0001"
+                      value={rebuyPriceStr}
+                      onChange={e => setRebuyPriceStr(e.target.value)}
+                      placeholder="Price you bought back at" />
+                    {rebuyPriceStr && form.entry_price > 0 && (() => {
+                      const rebuy = parseFloat(rebuyPriceStr);
+                      if (isNaN(rebuy)) return null;
+                      const pl = (form.entry_price - rebuy) * form.entry_quantity;
+                      return (
+                        <div style={{ fontSize: 11, marginTop: 3, color: pl >= 0 ? '#16a34a' : '#dc2626' }}>
+                          P/L: {pl >= 0 ? '+' : ''}{sym}{Math.abs(pl).toLocaleString(locale, { maximumFractionDigits: 2 })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label>Stop Loss ({sym}) {!trade && <span style={{ color: '#dc2626' }}>*</span>}</label>
+                    <input type="number" min="0" step="0.0001"
+                      value={form.stop_loss ?? ''}
+                      onChange={e => set('stop_loss', e.target.value ? parseFloat(e.target.value) : null)}
+                      placeholder="SL price"
+                      style={form.stop_loss != null && form.entry_price > 0
+                        ? { borderColor: form.stop_loss >= form.entry_price ? '#16a34a' : '#f59e0b', background: form.stop_loss >= form.entry_price ? '#f0fdf4' : '#fffbeb' }
+                        : !trade && form.entry_price > 0 ? { borderColor: '#dc2626' } : {}} />
+                    {form.stop_loss != null && form.entry_price > 0 ? (
+                      <div style={{ fontSize: 11, marginTop: 3, color: form.stop_loss >= form.entry_price ? '#16a34a' : '#92400e' }}>
+                        {form.stop_loss >= form.entry_price
+                          ? `Protected — SL ${((form.stop_loss - form.entry_price) / form.entry_price * 100).toFixed(1)}% above entry`
+                          : `Risk: ${((form.entry_price - form.stop_loss) / form.entry_price * 100).toFixed(1)}% per share`}
+                      </div>
+                    ) : !trade ? (
+                      <div style={{ fontSize: 11, marginTop: 3, color: '#dc2626' }}>Required for new positions</div>
+                    ) : null}
+                  </div>
+                )}
                 <div className="form-group">
                   <label>Invested ({sym})</label>
                   <input readOnly value={invested > 0 ? invested.toLocaleString(locale, { maximumFractionDigits: 2 }) : ''}

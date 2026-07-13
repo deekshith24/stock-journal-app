@@ -9,7 +9,7 @@ export interface ExitRecord {
 export interface Trade {
   id?: number;
   stock: string;
-  trade_type?: 'swing' | 'positional';
+  trade_type?: 'swing' | 'positional' | 'intraday_short';
   entry_date: string;
   exit_date: string | null;
   entry_quantity: number;

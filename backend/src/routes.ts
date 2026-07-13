@@ -178,6 +178,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 function enrichTrade(trade: Trade, portfolioSize: number) {
   const invested = trade.entry_price * trade.entry_quantity;
   const pfPercentage = portfolioSize > 0 ? (invested / portfolioSize) * 100 : 0;
+  const isShort = trade.trade_type === 'intraday_short';
 
   let totalExitQty = 0;
   let totalPL = 0;
@@ -189,7 +190,9 @@ function enrichTrade(trade: Trade, portfolioSize: number) {
   if (trade.exits && trade.exits.length > 0) {
     for (const e of trade.exits) {
       totalExitQty += e.quantity;
-      totalPL += (e.price - trade.entry_price) * e.quantity;
+      totalPL += isShort
+        ? (trade.entry_price - e.price) * e.quantity
+        : (e.price - trade.entry_price) * e.quantity;
       totalProceeds += e.price * e.quantity;
       if (e.reason) exitReasons.push(e.reason);
       if (e.emotions) exitEmotions.push(e.emotions);
@@ -197,7 +200,9 @@ function enrichTrade(trade: Trade, portfolioSize: number) {
     lastExitDate = trade.exits[trade.exits.length - 1].date;
   } else if (trade.exit_quantity != null && trade.exit_price != null) {
     totalExitQty = trade.exit_quantity;
-    totalPL = (trade.exit_price - trade.entry_price) * trade.exit_quantity;
+    totalPL = isShort
+      ? (trade.entry_price - trade.exit_price) * trade.exit_quantity
+      : (trade.exit_price - trade.entry_price) * trade.exit_quantity;
     totalProceeds = trade.exit_price * trade.exit_quantity;
     lastExitDate = trade.exit_date;
     if (trade.reason_for_exit) exitReasons.push(trade.reason_for_exit);

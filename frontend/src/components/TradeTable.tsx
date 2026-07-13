@@ -251,7 +251,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
   const standalone: Trade[] = [];
 
   for (const t of trades) {
-    if (t.status === 'Open' || t.status === 'Partial') {
+    if ((t.status === 'Open' || t.status === 'Partial') && t.trade_type !== 'intraday_short') {
       const bucket = openPartialMap.get(t.stock) ?? [];
       bucket.push(t);
       openPartialMap.set(t.stock, bucket);

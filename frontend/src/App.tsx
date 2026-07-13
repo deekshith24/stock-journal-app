@@ -21,7 +21,7 @@ import FaceIDPrompt from './components/FaceIDPrompt';
 
 type FilterType = 'all' | 'open' | 'closed';
 type PageType = 'india' | 'us' | 'analytics' | 'activity';
-type TradeTypeTab = 'swing' | 'positional';
+type TradeTypeTab = 'swing' | 'positional' | 'intraday_short';
 type UsCurrency = 'USD' | 'INR';
 type PeriodFilter = '1M' | '3M' | '6M' | '1Y' | 'ALL' | 'CUSTOM';
 
@@ -364,14 +364,18 @@ export default function App() {
     (!fromDate || t.entry_date >= fromDate) &&
     (!toDate   || t.entry_date <= toDate);
 
-  const isSwing      = (t: Trade) => t.trade_type === 'swing' || !t.trade_type;
-  const isPositional = (t: Trade) => t.trade_type === 'positional';
+  const isSwing         = (t: Trade) => t.trade_type === 'swing' || !t.trade_type;
+  const isPositional    = (t: Trade) => t.trade_type === 'positional';
+  const isIntradayShort = (t: Trade) => t.trade_type === 'intraday_short';
 
-  const allDateFilteredTrades        = trades.filter(dateFilter);
-  const swingDateFilteredTrades      = trades.filter(t => dateFilter(t) && isSwing(t));
-  const positionalDateFilteredTrades = trades.filter(t => dateFilter(t) && isPositional(t));
+  const allDateFilteredTrades            = trades.filter(dateFilter);
+  const swingDateFilteredTrades          = trades.filter(t => dateFilter(t) && isSwing(t));
+  const positionalDateFilteredTrades     = trades.filter(t => dateFilter(t) && isPositional(t));
+  const intradayShortDateFilteredTrades  = trades.filter(t => dateFilter(t) && isIntradayShort(t));
 
-  const dateFilteredTrades = tradeTypeTab === 'swing' ? swingDateFilteredTrades : positionalDateFilteredTrades;
+  const dateFilteredTrades = tradeTypeTab === 'swing' ? swingDateFilteredTrades
+    : tradeTypeTab === 'positional' ? positionalDateFilteredTrades
+    : intradayShortDateFilteredTrades;
 
   const filteredTrades = dateFilteredTrades.filter(t => {
     const matchesFilter =
@@ -385,7 +389,7 @@ export default function App() {
     return d !== 0 ? d : (b.id ?? 0) - (a.id ?? 0);
   });
 
-  const handleSave = async (data: { stock: string; trade_type: 'swing' | 'positional'; entry_date: string; entry_quantity: number; entry_price: number; reason_for_entry: string }, exits?: ExitRecord[]) => {
+  const handleSave = async (data: { stock: string; trade_type: 'swing' | 'positional' | 'intraday_short'; entry_date: string; entry_quantity: number; entry_price: number; reason_for_entry: string }, exits?: ExitRecord[]) => {
     try {
       if (editingTrade?.id) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -639,7 +643,7 @@ export default function App() {
               dateRates={dateRates}
               stockPrices={stockPrices}
               exchange={isUS ? 'US' : 'IN'}
-              title={tradeTypeTab === 'swing' ? 'Swing Trade' : 'Positional Trade'}
+              title={tradeTypeTab === 'swing' ? 'Swing Trade' : tradeTypeTab === 'positional' ? 'Positional Trade' : 'Intraday Short'}
               marketMode={marketModeFromTrades(dateFilteredTrades)}
               compact
             />
@@ -658,6 +662,12 @@ export default function App() {
                 onClick={() => { setTradeTypeTab('positional'); setFilter('all'); setSearch(''); setPeriod('ALL'); setDateFrom(''); setDateTo(''); }}
               >
                 Positional Trade
+              </button>
+              <button
+                className={`sub-tab ${tradeTypeTab === 'intraday_short' ? 'active' : ''}`}
+                onClick={() => { setTradeTypeTab('intraday_short'); setFilter('all'); setSearch(''); setPeriod('ALL'); setDateFrom(''); setDateTo(''); }}
+              >
+                Intraday Short
               </button>
               <div className="sub-tabs-spacer" />
               <button className="btn btn-primary btn-sm" onClick={() => { setEditingTrade(null); setShowForm(true); }}>
