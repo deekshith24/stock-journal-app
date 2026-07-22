@@ -402,8 +402,11 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
               // Primary: current unrealized impact on portfolio (if price available)
               const unrealImpactPct = unrealizedPL != null ? (unrealizedPL / portfolioSize) * 100 : null;
               // Secondary: SL impact (what happens if SL hits)
-              const slImpactPct = t.stop_loss != null
-                ? ((t.stop_loss - t.entry_price) * remainingQty(t) * todayRate / portfolioSize) * 100
+              const slImpact = t.stop_loss != null
+                ? (t.stop_loss - t.entry_price) * remainingQty(t) * todayRate
+                : null;
+              const slImpactPct = slImpact != null && portfolioSize
+                ? (slImpact / portfolioSize) * 100
                 : null;
               if (unrealImpactPct == null && slImpactPct == null) return <span style={{ color: '#c1c8d0' }}>—</span>;
               return (
@@ -414,10 +417,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
                       {unrealImpactPct >= 0 ? '+' : ''}{fmt(unrealImpactPct, 2, locale)}%
                     </span>
                   )}
-                  {slImpactPct != null && (
+                  {slImpact != null && slImpactPct != null && (
                     <div style={{ fontSize: 10, marginTop: 1, color: slImpactPct >= 0 ? '#16a34a' : Math.abs(slImpactPct) > 1 ? '#dc2626' : '#b45309', opacity: 0.85 }}
-                      title="Portfolio impact if SL hits">
-                      SL: {slImpactPct >= 0 ? '+' : ''}{fmt(slImpactPct, 2, locale)}%
+                      title="Amount lost if SL hits">
+                      SL: {slImpact >= 0 ? '+' : ''}{sym}{fmt(Math.abs(slImpact), 0, locale)} ({slImpactPct >= 0 ? '+' : ''}{fmt(slImpactPct, 2, locale)}%)
                     </div>
                   )}
                 </div>
@@ -591,10 +594,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
                     {unrealImpactPct >= 0 ? '+' : ''}{fmt(unrealImpactPct, 2, locale)}%
                   </span>
                 )}
-                {slImpactPct != null && (
+                {slImpact != null && slImpactPct != null && (
                   <div style={{ fontSize: 10, marginTop: 1, color: slImpactPct >= 0 ? '#16a34a' : Math.abs(slImpactPct) > 1 ? '#dc2626' : '#b45309', opacity: 0.85 }}
-                    title="Portfolio impact if SL hits">
-                    SL: {slImpactPct >= 0 ? '+' : ''}{fmt(slImpactPct, 2, locale)}%
+                    title="Amount lost if SL hits">
+                    SL: {slImpact >= 0 ? '+' : ''}{sym}{fmt(Math.abs(slImpact), 0, locale)} ({slImpactPct >= 0 ? '+' : ''}{fmt(slImpactPct, 2, locale)}%)
                   </div>
                 )}
               </div>
