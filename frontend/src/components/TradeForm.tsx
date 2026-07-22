@@ -16,6 +16,7 @@ interface Props {
   trade: Trade | null;
   defaultTradeType: 'swing' | 'positional' | 'intraday_short';
   currency: 'INR' | 'USD';
+  portfolioSize?: number;
   initialStock?: string;
   entryReasonSuggestions: string[];
   exitReasonSuggestions: string[];
@@ -44,7 +45,7 @@ function initialExits(trade: Trade | null): ExitRecord[] | null {
   return null;
 }
 
-export default function TradeForm({ trade, defaultTradeType, currency, initialStock, entryReasonSuggestions, exitReasonSuggestions, emotionSuggestions, onSave, onClose }: Props) {
+export default function TradeForm({ trade, defaultTradeType, currency, portfolioSize, initialStock, entryReasonSuggestions, exitReasonSuggestions, emotionSuggestions, onSave, onClose }: Props) {
   const [form, setForm] = useState<TradeEntryData>({ ...EMPTY, stock: initialStock ?? '', trade_type: defaultTradeType, entry_date: getTodayDate() });
   const [exits, setExits] = useState<ExitRecord[] | null>(null);
   const [saving, setSaving] = useState(false);
@@ -207,7 +208,22 @@ export default function TradeForm({ trade, defaultTradeType, currency, initialSt
                       <div style={{ fontSize: 11, marginTop: 3, color: form.stop_loss >= form.entry_price ? '#16a34a' : '#92400e' }}>
                         {form.stop_loss >= form.entry_price
                           ? `Protected — SL ${((form.stop_loss - form.entry_price) / form.entry_price * 100).toFixed(1)}% above entry`
-                          : `Risk: ${((form.entry_price - form.stop_loss) / form.entry_price * 100).toFixed(1)}% per share`}
+                          : (() => {
+                              const riskPerShare = form.entry_price - form.stop_loss;
+                              const totalRisk = riskPerShare * form.entry_quantity;
+                              const pfImpact = portfolioSize && portfolioSize > 0 ? (totalRisk / portfolioSize) * 100 : null;
+                              return (
+                                <>
+                                  Risk: {((riskPerShare / form.entry_price) * 100).toFixed(1)}% per share
+                                  {totalRisk > 0 && (
+                                    <span style={{ marginLeft: 6, color: '#dc2626' }}>
+                                      · Loss if SL hits: {sym}{totalRisk.toLocaleString(locale, { maximumFractionDigits: 0 })}
+                                      {pfImpact != null && <span style={{ marginLeft: 4, opacity: 0.85 }}>(-{pfImpact.toFixed(2)}% PF)</span>}
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
                       </div>
                     ) : !trade ? (
                       <div style={{ fontSize: 11, marginTop: 3, color: '#dc2626' }}>Required for new positions</div>

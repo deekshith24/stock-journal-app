@@ -792,6 +792,7 @@ export default function App() {
           trade={editingTrade}
           defaultTradeType={editingTrade?.trade_type ?? tradeTypeTab}
           currency={isUS ? 'USD' : 'INR'}
+          portfolioSize={portfolioSize}
           initialStock={addPositionStock ?? undefined}
           entryReasonSuggestions={entryReasonSuggestions}
           exitReasonSuggestions={exitReasonSuggestions}
