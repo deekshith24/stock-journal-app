@@ -21,7 +21,7 @@ import FaceIDPrompt from './components/FaceIDPrompt';
 
 type FilterType = 'all' | 'open' | 'closed';
 type PageType = 'india' | 'us' | 'analytics' | 'activity';
-type TradeTypeTab = 'swing' | 'positional' | 'intraday_short';
+type TradeTypeTab = 'swing' | 'positional' | 'intraday_short' | '7_bar';
 type UsCurrency = 'USD' | 'INR';
 type PeriodFilter = '1M' | '3M' | '6M' | '1Y' | 'ALL' | 'CUSTOM';
 
@@ -367,15 +367,18 @@ export default function App() {
   const isSwing         = (t: Trade) => t.trade_type === 'swing' || !t.trade_type;
   const isPositional    = (t: Trade) => t.trade_type === 'positional';
   const isIntradayShort = (t: Trade) => t.trade_type === 'intraday_short';
+  const is7Bar          = (t: Trade) => t.trade_type === '7_bar';
 
   const allDateFilteredTrades            = trades.filter(dateFilter);
   const swingDateFilteredTrades          = trades.filter(t => dateFilter(t) && isSwing(t));
   const positionalDateFilteredTrades     = trades.filter(t => dateFilter(t) && isPositional(t));
   const intradayShortDateFilteredTrades  = trades.filter(t => dateFilter(t) && isIntradayShort(t));
+  const sevenBarDateFilteredTrades       = trades.filter(t => dateFilter(t) && is7Bar(t));
 
   const dateFilteredTrades = tradeTypeTab === 'swing' ? swingDateFilteredTrades
     : tradeTypeTab === 'positional' ? positionalDateFilteredTrades
-    : intradayShortDateFilteredTrades;
+    : tradeTypeTab === 'intraday_short' ? intradayShortDateFilteredTrades
+    : sevenBarDateFilteredTrades;
 
   const filteredTrades = dateFilteredTrades.filter(t => {
     const matchesFilter =
@@ -389,7 +392,7 @@ export default function App() {
     return d !== 0 ? d : (b.id ?? 0) - (a.id ?? 0);
   });
 
-  const handleSave = async (data: { stock: string; trade_type: 'swing' | 'positional' | 'intraday_short'; entry_date: string; entry_quantity: number; entry_price: number; reason_for_entry: string }, exits?: ExitRecord[]) => {
+  const handleSave = async (data: { stock: string; trade_type: 'swing' | 'positional' | 'intraday_short' | '7_bar'; entry_date: string; entry_quantity: number; entry_price: number; reason_for_entry: string }, exits?: ExitRecord[]) => {
     try {
       if (editingTrade?.id) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -479,6 +482,36 @@ export default function App() {
       loadData();
     } catch (e: unknown) {
       alert((e as Error).message || 'Failed to update stop loss');
+    }
+  };
+
+  const handleMigrateTo7Bar = async () => {
+    const candidates = trades.filter(t =>
+      t.trade_type !== '7_bar' &&
+      /7\s*bar/i.test(t.reason_for_entry ?? '')
+    );
+    if (candidates.length === 0) {
+      alert('No trades found with "7 bar" in entry reason.');
+      return;
+    }
+    if (!window.confirm(`Move ${candidates.length} trade(s) to 7 Bar tab?`)) return;
+    try {
+      await Promise.all(candidates.map(t =>
+        isUS ? api.updateUsTrade(t.id!, { trade_type: '7_bar' } as any) : api.updateTrade(t.id!, { trade_type: '7_bar' } as any)
+      ));
+      loadData();
+    } catch (e: unknown) {
+      alert((e as Error).message || 'Migration failed');
+    }
+  };
+
+  const handleConvertTo7Bar = async (trade: Trade) => {
+    if (!trade.id) return;
+    try {
+      await (isUS ? api.updateUsTrade(trade.id, { trade_type: '7_bar' } as any) : api.updateTrade(trade.id, { trade_type: '7_bar' } as any));
+      loadData();
+    } catch (e: unknown) {
+      alert((e as Error).message || 'Failed to convert trade type');
     }
   };
 
@@ -648,7 +681,7 @@ export default function App() {
               dateRates={dateRates}
               stockPrices={stockPrices}
               exchange={isUS ? 'US' : 'IN'}
-              title={tradeTypeTab === 'swing' ? 'Swing Trade' : tradeTypeTab === 'positional' ? 'Positional Trade' : 'Intraday Short'}
+              title={tradeTypeTab === 'swing' ? 'Swing Trade' : tradeTypeTab === 'positional' ? 'Positional Trade' : tradeTypeTab === 'intraday_short' ? 'Intraday Short' : '7 Bar Trade'}
               marketMode={marketModeFromTrades(dateFilteredTrades)}
               compact
             />
@@ -674,6 +707,25 @@ export default function App() {
               >
                 Intraday Short
               </button>
+              <button
+                className={`sub-tab ${tradeTypeTab === '7_bar' ? 'active' : ''}`}
+                onClick={() => { setTradeTypeTab('7_bar'); setFilter('all'); setSearch(''); setPeriod('ALL'); setDateFrom(''); setDateTo(''); }}
+              >
+                7 Bar Trade
+              </button>
+              {tradeTypeTab === '7_bar' && (() => {
+                const count = trades.filter(t => t.trade_type !== '7_bar' && /7\s*bar/i.test(t.reason_for_entry ?? '')).length;
+                return count > 0 ? (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: 11, color: '#7c3aed', border: '1px solid #ddd6fe' }}
+                    onClick={handleMigrateTo7Bar}
+                    title="Move trades with '7 bar' in entry reason to this tab"
+                  >
+                    ↗ Migrate {count} trade{count > 1 ? 's' : ''}
+                  </button>
+                ) : null;
+              })()}
               <div className="sub-tabs-spacer" />
               <button className="btn btn-primary btn-sm" onClick={() => { setEditingTrade(null); setShowForm(true); }}>
                 + Add Trade
@@ -782,6 +834,7 @@ export default function App() {
               onView={t => setViewingTrade(t)}
               onUpdateGroupSL={handleUpdateGroupSL}
               onConvertToPositional={handleConvertToPositional}
+              onConvertTo7Bar={handleConvertTo7Bar}
             />
           </>
         )}

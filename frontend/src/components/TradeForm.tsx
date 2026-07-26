@@ -4,7 +4,7 @@ import { entryReasonOptions, exitReasonOptions, emotionOptions } from '../consta
 
 interface TradeEntryData {
   stock: string;
-  trade_type: 'swing' | 'positional' | 'intraday_short';
+  trade_type: 'swing' | 'positional' | 'intraday_short' | '7_bar';
   entry_date: string;
   entry_quantity: number;
   entry_price: number;
@@ -14,7 +14,7 @@ interface TradeEntryData {
 
 interface Props {
   trade: Trade | null;
-  defaultTradeType: 'swing' | 'positional' | 'intraday_short';
+  defaultTradeType: 'swing' | 'positional' | 'intraday_short' | '7_bar';
   currency: 'INR' | 'USD';
   portfolioSize?: number;
   initialStock?: string;
@@ -133,7 +133,7 @@ export default function TradeForm({ trade, defaultTradeType, currency, portfolio
     <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal" style={{ maxWidth: exits ? 760 : 700 }} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{trade ? `Edit — ${trade.stock}` : isShort ? 'Add Intraday Short Trade' : `Add ${form.trade_type === 'positional' ? 'Positional' : 'Swing'} Trade`}</h2>
+          <h2>{trade ? `Edit — ${trade.stock}` : isShort ? 'Add Intraday Short Trade' : `Add ${form.trade_type === 'positional' ? 'Positional' : form.trade_type === '7_bar' ? '7 Bar' : 'Swing'} Trade`}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
