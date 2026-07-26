@@ -485,26 +485,6 @@ export default function App() {
     }
   };
 
-  const handleMigrateTo7Bar = async () => {
-    const candidates = trades.filter(t =>
-      t.trade_type !== '7_bar' &&
-      /7\s*bar/i.test(t.reason_for_entry ?? '')
-    );
-    if (candidates.length === 0) {
-      alert('No trades found with "7 bar" in entry reason.');
-      return;
-    }
-    if (!window.confirm(`Move ${candidates.length} trade(s) to 7 Bar tab?`)) return;
-    try {
-      await Promise.all(candidates.map(t =>
-        isUS ? api.updateUsTrade(t.id!, { trade_type: '7_bar' } as any) : api.updateTrade(t.id!, { trade_type: '7_bar' } as any)
-      ));
-      loadData();
-    } catch (e: unknown) {
-      alert((e as Error).message || 'Migration failed');
-    }
-  };
-
   const handleConvertTo7Bar = async (trade: Trade) => {
     if (!trade.id) return;
     try {
@@ -713,19 +693,6 @@ export default function App() {
               >
                 7 Bar Trade
               </button>
-              {tradeTypeTab === '7_bar' && (() => {
-                const count = trades.filter(t => t.trade_type !== '7_bar' && /7\s*bar/i.test(t.reason_for_entry ?? '')).length;
-                return count > 0 ? (
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: 11, color: '#7c3aed', border: '1px solid #ddd6fe' }}
-                    onClick={handleMigrateTo7Bar}
-                    title="Move trades with '7 bar' in entry reason to this tab"
-                  >
-                    ↗ Migrate {count} trade{count > 1 ? 's' : ''}
-                  </button>
-                ) : null;
-              })()}
               <div className="sub-tabs-spacer" />
               <button className="btn btn-primary btn-sm" onClick={() => { setEditingTrade(null); setShowForm(true); }}>
                 + Add Trade
