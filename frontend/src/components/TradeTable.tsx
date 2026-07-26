@@ -491,15 +491,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
                 onClick={() => onConvertToPositional(t)}
               >→ Pos</button>
             )}
-            {!isChild && t.trade_type !== '7_bar' && (
-              <button
-                className="btn-icon"
-                title="Move to 7 Bar tab"
-                style={{ color: '#0891b2', fontSize: 10, fontWeight: 700 }}
-                onClick={() => onConvertTo7Bar(t)}
-              >→ 7B</button>
-            )}
             {!isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
+            {!isChild && t.trade_type !== '7_bar' && (
+              <button className="btn-icon" title="Move to 7 Bar tab" style={{ color: '#0891b2', fontSize: 10, fontWeight: 700 }} onClick={() => onConvertTo7Bar(t)}>→ 7B</button>
+            )}
             {isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
             <button className="btn-icon" onClick={() => onDelete(t)} title="Delete" style={{ color: '#dc2626' }}>🗑️</button>
           </div>
@@ -635,6 +630,10 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
         <td><div className="actions-cell">
           <button className="btn-icon btn-close" onClick={e => { e.stopPropagation(); onCloseGroup(stock, bucket); }} title="Close position (FIFO)">✓</button>
           <button className="btn-icon" onClick={e => { e.stopPropagation(); onAddPosition(stock); }} title="Add position" style={{ color: '#2563eb', fontWeight: 700 }}>+</button>
+          {bucket.every(t => t.trade_type !== '7_bar') && (
+            <button className="btn-icon" title="Move all to 7 Bar tab" style={{ color: '#0891b2', fontSize: 10, fontWeight: 700 }}
+              onClick={e => { e.stopPropagation(); bucket.forEach(t => onConvertTo7Bar(t)); }}>→ 7B</button>
+          )}
           {editingGroupSL?.stock === stock ? (
             <span onClick={e => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
               <input
