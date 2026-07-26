@@ -485,16 +485,6 @@ export default function App() {
     }
   };
 
-  const handleConvertTo7Bar = async (trade: Trade) => {
-    if (!trade.id) return;
-    try {
-      await (isUS ? api.updateUsTrade(trade.id, { trade_type: '7_bar' } as any) : api.updateTrade(trade.id, { trade_type: '7_bar' } as any));
-      loadData();
-    } catch (e: unknown) {
-      alert((e as Error).message || 'Failed to convert trade type');
-    }
-  };
-
   const handleConvertToPositional = async (trade: Trade) => {
     if (!trade.id) return;
     try {
@@ -801,7 +791,6 @@ export default function App() {
               onView={t => setViewingTrade(t)}
               onUpdateGroupSL={handleUpdateGroupSL}
               onConvertToPositional={handleConvertToPositional}
-              onConvertTo7Bar={handleConvertTo7Bar}
             />
           </>
         )}

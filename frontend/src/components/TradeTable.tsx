@@ -18,7 +18,6 @@ interface Props {
   onView: (trade: Trade) => void;
   onUpdateGroupSL: (trades: Trade[], stopLoss: number | null) => Promise<void>;
   onConvertToPositional: (trade: Trade) => Promise<void>;
-  onConvertTo7Bar: (trade: Trade) => Promise<void>;
 }
 
 function remainingQty(t: Trade): number {
@@ -222,7 +221,7 @@ function isStalledTrade(t: Trade, currentPrice?: number): boolean {
   return currentPrice <= entry || pctMove <= 1;
 }
 
-export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, portfolioSize, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional, onConvertTo7Bar }: Props) {
+export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, portfolioSize, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set());
   const [editingGroupSL, setEditingGroupSL] = useState<{ stock: string; value: string } | null>(null);
@@ -490,14 +489,6 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
                 style={{ color: '#7c3aed', fontSize: 10, fontWeight: 700 }}
                 onClick={() => onConvertToPositional(t)}
               >→ Pos</button>
-            )}
-            {!isChild && t.trade_type !== '7_bar' && (
-              <button
-                className="btn-icon"
-                title="Move to 7 Bar tab"
-                style={{ color: '#0891b2', fontSize: 10, fontWeight: 700 }}
-                onClick={() => onConvertTo7Bar(t)}
-              >→ 7B</button>
             )}
             {!isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
             {isChild && <button className="btn-icon" onClick={() => onEdit(t)} title="Edit">✏️</button>}
