@@ -491,7 +491,7 @@ export default function TradeTable({ trades, currency, exchange, exchangeRate, d
                 onClick={() => onConvertToPositional(t)}
               >→ Pos</button>
             )}
-            {!isChild && t.trade_type !== '7_bar' && /7\s*bar/i.test(t.reason_for_entry ?? '') && (
+            {!isChild && t.trade_type !== '7_bar' && (
               <button
                 className="btn-icon"
                 title="Move to 7 Bar tab"
