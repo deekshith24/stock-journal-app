@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Trade, StockPrice } from '../types';
 import { marketModeFromTrades } from '../utils/marketMode';
+import {
+  TradeComment, CommentStyle, parseDays,
+  isStalledTrade, getTradeComments, getGroupComments,
+} from '../utils/tradeComments';
 
 interface Props {
   trades: Trade[];
@@ -60,18 +64,6 @@ type RenderItem =
   | { kind: 'group'; stock: string; trades: Trade[] }
   | { kind: 'trade'; trade: Trade; isChild: boolean; idx: number };
 
-function parseDays(d: string | undefined): number {
-  if (!d) return 0;
-  return parseInt(d, 10) || 0;
-}
-
-type CommentStyle = 'danger' | 'warning' | 'success';
-
-interface TradeComment {
-  text: string;
-  style: CommentStyle;
-}
-
 const COMMENT_STYLES: Record<CommentStyle, { background: string; color: string; border: string }> = {
   danger:  { background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' },
   warning: { background: '#fffbeb', color: '#92400e', border: '1px solid #fcd34d' },
@@ -89,136 +81,6 @@ function renderComments(comments: TradeComment[]) {
       ))}
     </div>
   );
-}
-
-function getTradeComments(
-  t: Trade,
-  unrealizedPLPct: number | null,
-  isFullPosition: boolean,
-  isStalled: boolean,
-  isOverdueSwing: boolean,
-  isOpenOrPartial: boolean,
-  marketMode: 'choppy' | 'bull' | 'neutral',
-): TradeComment[] {
-  if (!isOpenOrPartial) return [];
-  const cs: TradeComment[] = [];
-
-  // Structural / exit signals (danger)
-  if (isStalled)      cs.push({ text: 'Exit — stalled 10+ days', style: 'danger' });
-  if (isOverdueSwing) cs.push({ text: `Exit swing (${t.days_in_trade}d held)`, style: 'danger' });
-  if (t.stop_loss == null) cs.push({ text: '⚠ Set a Stop Loss', style: 'danger' });
-
-  // SL too wide: ideal entry risks 3%, max 5% (under 200 EMA stretch)
-  if (t.stop_loss != null && t.entry_price > 0) {
-    const slRiskPct = ((t.entry_price - t.stop_loss) / t.entry_price) * 100;
-    if (slRiskPct > 5) cs.push({ text: `SL wide (${slRiskPct.toFixed(1)}% risk/share)`, style: 'danger' });
-  }
-
-  // Open risk per trade vs portfolio: choppy/neutral limit 1%, bull limit 2%
-  // open_risk% = (entry−sl)/entry × pf_percentage
-  if (t.stop_loss != null && t.entry_price > 0 && (t.pf_percentage ?? 0) > 0) {
-    const slRisk = (t.entry_price - t.stop_loss) / t.entry_price;
-    if (slRisk > 0) {
-      const openRisk = slRisk * (t.pf_percentage! / 100) * 100;
-      const limit = marketMode === 'bull' ? 2 : 1;
-      if (openRisk > limit) {
-        cs.push({ text: `Open risk ${openRisk.toFixed(1)}% PF (limit ${limit}%)`, style: marketMode === 'bull' ? 'warning' : 'danger' });
-      }
-    }
-  }
-
-  if (unrealizedPLPct != null) {
-    const pfPct = t.pf_percentage ?? 0;
-    const isLargePosition = pfPct >= 15; // 15%+ PF — moves the needle significantly
-    const isSmallPosition = pfPct > 0 && pfPct < 10; // <10% PF — partial won't impact much
-
-    // Move SL to breakeven at 8%+ (more aggressive in choppy — protect open risk)
-    if (unrealizedPLPct >= 8) {
-      const slProtected = t.stop_loss != null && t.stop_loss >= t.entry_price;
-      if (!slProtected) cs.push({ text: 'Move SL to breakeven', style: 'warning' });
-    }
-
-    // Booking threshold by market mode: choppy 10%, neutral 12%, bull 15%
-    // Large positions (≥15% PF): book at 10% regardless — 10% on big size moves the needle
-    const modeThreshold = marketMode === 'choppy' ? 10 : marketMode === 'bull' ? 15 : 12;
-    const bookThreshold = isLargePosition ? Math.min(modeThreshold, 10) : modeThreshold;
-
-    if (isFullPosition && unrealizedPLPct >= bookThreshold) {
-      // Skip suggestion for small positions below 15% gain — peeling off won't move PF
-      if (!isSmallPosition || unrealizedPLPct >= 15) {
-        cs.push({ text: `Book 30% (+${unrealizedPLPct.toFixed(1)}%)`, style: 'success' });
-      }
-    }
-
-    // After partial booking — trail remaining with EMA
-    if (!isFullPosition && unrealizedPLPct >= 20) {
-      cs.push({ text: 'Trail SL with EMA', style: 'warning' });
-    }
-
-    // Target zone: aim for 30–40% gains — plan scale-out
-    if (unrealizedPLPct >= 28) {
-      cs.push({ text: 'Near 30-40% target — plan exit', style: 'success' });
-    }
-  }
-
-  return cs;
-}
-
-function getGroupComments(
-  bucket: Trade[],
-  unrealizedPLPct: number | null,
-  avgEntryPrice: number,
-  isStalledGroup: boolean,
-  marketMode: 'choppy' | 'bull' | 'neutral',
-): TradeComment[] {
-  const cs: TradeComment[] = [];
-
-  if (isStalledGroup) cs.push({ text: 'Exit — stalled 10+ days', style: 'danger' });
-
-  const noSLCount = bucket.filter(t => t.stop_loss == null).length;
-  if (noSLCount > 0) {
-    cs.push({ text: noSLCount === bucket.length ? '⚠ No Stop Loss set' : `⚠ No SL (${noSLCount} entries)`, style: 'danger' });
-  }
-
-  if (unrealizedPLPct != null) {
-    // Move SL to breakeven at 8%+
-    if (unrealizedPLPct >= 8) {
-      const slValues = bucket.map(t => t.stop_loss ?? null);
-      const groupSL  = slValues.every(v => v === slValues[0]) ? slValues[0] : null;
-      const slProtected = groupSL != null && groupSL >= avgEntryPrice;
-      if (!slProtected) cs.push({ text: 'Move SL to breakeven', style: 'warning' });
-    }
-
-    const totalPfPct = bucket.reduce((s, t) => s + (t.pf_percentage ?? 0), 0);
-    const allFull    = bucket.every(t => Math.abs(remainingQty(t) - t.entry_quantity) < 1e-8);
-    const modeThreshold = marketMode === 'choppy' ? 10 : marketMode === 'bull' ? 15 : 12;
-    const isLargeGroup  = totalPfPct >= 15;
-    const bookThreshold = isLargeGroup ? Math.min(modeThreshold, 10) : modeThreshold;
-
-    if (allFull && unrealizedPLPct >= bookThreshold) {
-      cs.push({ text: `Book 30% (+${unrealizedPLPct.toFixed(1)}%)`, style: 'success' });
-    }
-
-    if (!allFull && unrealizedPLPct >= 20) {
-      cs.push({ text: 'Trail SL with EMA', style: 'warning' });
-    }
-
-    if (unrealizedPLPct >= 28) {
-      cs.push({ text: 'Near 30-40% target — plan exit', style: 'success' });
-    }
-  }
-
-  return cs;
-}
-
-function isStalledTrade(t: Trade, currentPrice?: number): boolean {
-  if (!(t.status === 'Open' || t.status === 'Partial')) return false;
-  if (parseDays(t.days_in_trade) <= 10) return false;
-  if (currentPrice == null) return false;
-  const entry = t.entry_price || 0;
-  if (entry <= 0) return false;
-  const pctMove = Math.abs((currentPrice - entry) / entry) * 100;
-  return currentPrice <= entry || pctMove <= 1;
 }
 
 export default function TradeTable({ trades, currency, exchange, exchangeRate, dateRates, stockPrices, portfolioSize, onEdit, onDelete, onClose, onCloseGroup, onAddPosition, onView, onUpdateGroupSL, onConvertToPositional }: Props) {
