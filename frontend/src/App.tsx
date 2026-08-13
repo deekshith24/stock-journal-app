@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Trade, Settings, ExitRecord, StockPrice, ActivityEntry } from './types';
 import { api } from './api';
 import { supabase } from './supabaseClient';
-import { exportToExcel } from './utils/exportExcel';
+import { exportToExcel, exportToJSON } from './utils/exportExcel';
 import { marketModeFromTrades } from './utils/marketMode';
 import TradeTable from './components/TradeTable';
 import TradeForm from './components/TradeForm';
@@ -499,6 +499,10 @@ export default function App() {
     exportToExcel(indiaTrades, usTrades, lastUsdToInrRate ?? 0);
   };
 
+  const handleExportJSON = () => {
+    exportToJSON(indiaTrades, usTrades, stockPrices ?? undefined);
+  };
+
   const handleRefreshPrices = () => {
     window.localStorage.removeItem(STOCK_PRICE_CACHE_KEY);
     loadData();
@@ -604,8 +608,11 @@ export default function App() {
           <button className="btn btn-ghost" onClick={() => setMaskPrices((m: boolean) => !m)} title={maskPrices ? 'Show prices' : 'Hide prices'}>
             {maskPrices ? '👁' : '🙈'}
           </button>
-          <button className="btn btn-ghost" onClick={handleExport} title="Export all trades to Excel">
-            ↓ Export
+          <button className="btn btn-ghost" onClick={handleExport} title="Export all trades to Excel (.xlsx)">
+            ↓ Excel
+          </button>
+          <button className="btn btn-ghost" onClick={handleExportJSON} title="Export all trades to JSON (for migration — includes all fields, SL, exits)">
+            ↓ JSON
           </button>
           <button className="btn btn-ghost" onClick={() => setShowSettings(true)}>⚙ Settings</button>
           <button className="btn btn-ghost" onClick={() => { sessionStorage.removeItem('faceIdVerified'); supabase.auth.signOut(); setFaceIdState('checking'); }} title="Sign out">Sign out</button>
